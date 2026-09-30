@@ -12,7 +12,9 @@ while :; do
         continue
     }
 
-    # Bootstrap the protected snapshot only from a healthy local installation.
+    # Normally v1.2.0 already installed the bundled verified snapshot.
+    # Keep local bootstrap as a fallback if the private snapshot is manually
+    # removed while a healthy XWeb 1160289 still exists.
     snapshot_valid || "$MODDIR/bin/snapshot.sh" ensure >/dev/null 2>&1 || true
     "$MODDIR/bin/repair.sh" boot
 

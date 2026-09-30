@@ -1,0 +1,22 @@
+WeChat Play XWeb Guard v1.2.0
+Author: E3N
+
+This module bundles an XWeb 1160289 static runtime snapshot.
+
+Snapshot SHA256:
+09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
+
+The bundled archive contains only the validated XWeb static runtime files
+listed in the project documentation. It contains no WeChat chats, account
+records, Cookies, History, WebView profile data, MicroMsg directory, or FCM
+credentials.
+
+The repository maintainer, E3N, states that they hold authorization to
+publicly redistribute these XWeb binary files.
+
+The MIT license distributed with this project applies to the guard source
+code. It does not automatically change the ownership or licensing terms of
+the bundled third-party XWeb runtime.
+
+This project is not affiliated with or endorsed by Tencent, WeChat, Google,
+or Xiaomi.

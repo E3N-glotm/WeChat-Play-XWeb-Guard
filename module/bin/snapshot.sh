@@ -4,8 +4,11 @@
 MODE=${1:-ensure}
 ensure_rundir
 
-supported_wechat || {
-    [ "$MODE" = install ] && log_msg "snapshot skipped: unsupported WeChat versionCode=$(wechat_version_code)"
+if ! validated_wechat; then
+    log_msg "WARNING: WeChat versionCode=$(wechat_version_code) is unvalidated for XWeb $XWEB_VERSION"
+fi
+recovery_allowed || {
+    log_msg "SKIP: strict-build mode blocks unvalidated WeChat versionCode=$(wechat_version_code)"
     exit 10
 }
 

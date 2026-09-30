@@ -9,6 +9,7 @@ BB=/data/adb/magisk/busybox
 WXPKG=com.tencent.mm
 EXPECTED_VERSION_CODE=3141
 XWEB_VERSION=1160289
+EXPECTED_SNAPSHOT_SHA=09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
 
 D=/data_mirror/data_ce/null/0/$WXPKG
 P=$D/app_xweb_data
@@ -45,8 +46,18 @@ wechat_version_code() {
         | sed -n 's/.*versionCode=\([0-9]*\).*/\1/p'
 }
 
-supported_wechat() {
+validated_wechat() {
     [ "$(wechat_version_code)" = "$EXPECTED_VERSION_CODE" ]
+}
+
+strict_build_mode() {
+    [ -f "$RUNDIR/strict_build" ]
+}
+
+recovery_allowed() {
+    validated_wechat && return 0
+    strict_build_mode && return 1
+    return 0
 }
 
 live_core_healthy() {

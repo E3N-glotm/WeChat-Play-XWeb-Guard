@@ -12,7 +12,13 @@ fi
 
 # A deliberate uninstall / full app-data reset should not be reconstructed.
 app_data_ready || exit 0
-supported_wechat || exit 0
+if ! validated_wechat; then
+    log_msg "WARNING: restoring XWeb $XWEB_VERSION on unvalidated WeChat versionCode=$(wechat_version_code)"
+fi
+recovery_allowed || {
+    log_msg "SKIP: strict-build mode blocks recovery on versionCode=$(wechat_version_code)"
+    exit 0
+}
 live_core_healthy && exit 0
 
 [ "$MODE" = boot ] || sleep 3

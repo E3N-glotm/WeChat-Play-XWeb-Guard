@@ -2,69 +2,163 @@
 
 **Author / 作者：E3N**
 
-A small Magisk module that protects the locally installed XWeb runtime used by the Google Play build of WeChat from accidental cleanup, and restores the verified static runtime files when they disappear.
+WeChat Play XWeb Guard is a Magisk module for protecting and restoring the XWeb 1160289 runtime used by the validated Google Play build of WeChat.
 
-一个用于保护 **Google Play 版微信 XWeb 内核**的 Magisk 模块：在本机生成受保护快照，通过文件事件监听检测误删，并在兼容条件满足时自动恢复 XWeb 静态运行文件。
+WeChat Play XWeb Guard 是一个用于保护和恢复 **Google Play 版微信 XWeb 1160289** 的 Magisk 模块。
 
-> **This repository does not contain or redistribute WeChat or XWeb binaries.**  
-> **本仓库不包含、也不重新分发微信或 XWeb 二进制文件。**
+## v1.2.0 at a glance / v1.2.0 概览
 
-## Documentation / 文档
+- Bundles an authorized, privacy-scrubbed XWeb 1160289 static runtime snapshot directly in the Magisk ZIP.
+- Works even when the user's current WeChat XWeb has already been deleted; no APKM is required.
+- Uses BusyBox `inotifyd` for event-driven deletion detection instead of high-frequency polling.
+- Restores only XWeb static runtime files and preserves WeChat-generated profile/dex state.
+- Does not force-stop WeChat, modify FCM tokens, disable SELinux, or use LSPosed/Zygisk.
+- WeChat build changes no longer automatically disable recovery. Unvalidated builds produce a warning, but recovery remains enabled by default.
+- Optional `strict_build` mode is available for users who want recovery limited to the directly validated WeChat build.
 
-- [中文详细说明](docs/README_CN.md)
-- [Detailed English documentation](docs/README_EN.md)
+中文：
 
-## Current validated target / 当前验证目标
+- Magisk ZIP **直接内置**经过脱敏检查的 XWeb 1160289 静态运行快照。
+- 即使用户当前微信里的 XWeb 已经被清理掉，也能直接恢复；**不需要 APKM**。
+- 使用 BusyBox `inotifyd` 事件监听，不做高频目录轮询。
+- 只恢复 XWeb 静态运行文件，保留微信自己生成的 Profile 和 dex/oat 状态。
+- 不强制停止微信、不修改 FCM token、不关闭 SELinux、不使用 LSPosed/Zygisk。
+- 微信升级到其他 build 后，模块**不会自动停止恢复**；只提示当前 build 未验证，默认仍继续恢复 XWeb 1160289。
+- 如果用户希望采用保守策略，可自行启用 `strict_build`。
 
-| Item | Validated value |
+## Validated reference / 已验证参考环境
+
+| Item | Value |
 |---|---|
 | Package | `com.tencent.mm` |
 | WeChat | Google Play 8.0.77 |
 | versionCode | `3141` |
 | XWeb | `1160289` |
 | ABI | `arm64-v8a` |
-| Root environment | Magisk-compatible |
+| Root | Magisk-compatible |
 
-The compatibility checks are intentionally strict. If WeChat is upgraded to a different build, the module does **not** force the old XWeb into it.
+The table above is the **directly tested reference**, not an automatic compatibility block. Starting with v1.2.0, a different WeChat versionCode is treated as **UNVALIDATED**, not **DISABLED**.
 
-兼容性检查采用保守策略。微信升级到其他 build 后，模块会停止旧版本自动恢复，而不是强行把 XWeb 1160289 写入未知版本。
+上表是**已实机验证的参考组合**，不是自动兼容性封锁条件。从 v1.2.0 开始，其他微信 versionCode 会被标记为 **UNVALIDATED**，但默认不会停止恢复。
 
-## Core behavior / 核心行为
+Optional strict mode / 可选严格模式：
 
-1. During installation, the module looks for an already healthy local XWeb 1160289.
-2. If found, it creates a private snapshot under `/data/adb/wechat_xweb_guard/`.
-3. A BusyBox `inotifyd` watcher sleeps until a relevant XWeb path is deleted or moved.
-4. If the static runtime becomes incomplete, the module verifies the private snapshot and restores only the protected static files.
-5. WeChat-generated WebView profile data is preserved; WeChat is not force-stopped.
+```sh
+su -c 'touch /data/adb/wechat_xweb_guard/strict_build'
+```
 
-安装时从用户设备当前健康的 XWeb 1160289 **本地生成**保护快照；运行时使用 `inotifyd` 监听删除/移动事件。发生误删后仅恢复静态运行文件，不备份聊天、账号、Cookie、历史记录或 WebView Profile，也不会为了恢复而强制停止微信。
+Return to default cross-build recovery / 恢复默认跨 build 恢复：
 
-## Install / 安装
+```sh
+su -c 'rm -f /data/adb/wechat_xweb_guard/strict_build'
+```
 
-Download the ZIP from [Releases](https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases), install it in Magisk, then reboot.
+## Bundled XWeb snapshot / 内置 XWeb 快照
 
-从 [Releases](https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases) 下载 ZIP，在 Magisk 中安装并重启。
+v1.2.0 includes:
 
-If the compatible XWeb core is healthy at installation time, the local snapshot is created immediately. Otherwise the module remains passive and will bootstrap a snapshot later when a healthy compatible XWeb appears.
+```text
+assets/core_1160289.tar
+assets/core_1160289.sha256
+```
 
-如果安装时本机已有健康且兼容的 XWeb，快照会立即建立；否则模块保持被动，不会伪造核心。之后微信重新生成健康 XWeb 时，模块会再尝试建立本地快照。
+Snapshot SHA256:
 
-## Privacy / 隐私
+```text
+09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
+```
 
-The snapshot whitelist contains only:
+The archive contains exactly the validated XWeb static runtime set:
 
-- `apk/base.apk`
-- `zip/base.zip`
-- XWeb static runtime libraries/configuration under `extracted_xwalkcore`
+```text
+apk/base.apk
+extracted_xwalkcore/
+extracted_xwalkcore/dummy.dat
+extracted_xwalkcore/libxwebcore.so
+extracted_xwalkcore/libWXAMSDK.so
+extracted_xwalkcore/libffmpeg.so
+extracted_xwalkcore/media_player_extension.apk
+extracted_xwalkcore/filelist.config
+extracted_xwalkcore/reslist.config
+zip/base.zip
+```
 
-The module explicitly rejects snapshot content containing profile/chat-style paths such as `Default`, `Profile`, `Cookies`, `History`, `Login`, or `MicroMsg`.
+It contains no `Default`, `Profile`, `Cookies`, `History`, `Login`, `MicroMsg`, FCM token, chat, or account data.
 
-保护快照只包含 XWeb 静态运行文件，并显式拒绝包含 `Default`、`Profile`、`Cookies`、`History`、`Login`、`MicroMsg` 等个人数据路径。
+该快照只包含 XWeb 静态运行文件，不包含 `Default`、`Profile`、`Cookies`、`History`、`Login`、`MicroMsg`、FCM token、聊天记录或账号数据。
 
-## License
+The maintainer **E3N states that they hold authorization to publicly redistribute the bundled XWeb binary files**. See [THIRD_PARTY_NOTICE.md](THIRD_PARTY_NOTICE.md).
 
-Module source code: MIT License.
+维护者 **E3N 声明拥有这些 XWeb 二进制文件的公开再分发授权**。详细信息见 [THIRD_PARTY_NOTICE.md](THIRD_PARTY_NOTICE.md)。
 
-WeChat and XWeb are third-party software. This project is not affiliated with or endorsed by Tencent, WeChat, Google, or Xiaomi.
+## How it works / 工作原理
 
-模块源码采用 MIT License。微信与 XWeb 属于第三方软件；本项目与腾讯、微信、Google、小米无隶属或官方背书关系。
+During installation:
+
+1. The bundled snapshot SHA256 is verified.
+2. The snapshot is moved into the private guard directory:
+
+   ```text
+   /data/adb/wechat_xweb_guard/core_1160289.tar
+   /data/adb/wechat_xweb_guard/core_1160289.sha256
+   ```
+
+3. Only one persistent copy is kept after installation.
+4. On boot, the guard watches the WeChat/XWeb paths using `inotifyd`.
+5. If the XWeb static runtime disappears or becomes incomplete, the snapshot is verified again and restored.
+6. Directory watches are automatically re-armed after recovery because restored directories have new inodes.
+
+安装过程会先验证内置快照 SHA256，然后把快照移到独立私有目录，避免模块目录和保护目录各占一份空间。开机后通过 `inotifyd` 等待删除/移动事件；发现 XWeb 静态文件缺失后再次校验快照并恢复，同时重新订阅新目录 inode。
+
+## Installation / 安装
+
+Download the latest ZIP from:
+
+https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases
+
+在 Magisk 中选择 Release ZIP 安装并重启即可。v1.2.0 不要求用户事先准备 APKM，也不要求当前微信里已经存在 XWeb。
+
+## Magisk Action / 模块操作
+
+The Action entry reports:
+
+- current WeChat versionCode;
+- whether the build is validated or unvalidated;
+- whether XWeb 1160289 is currently healthy;
+- whether the protected snapshot verifies;
+- watcher state;
+- recent recovery log entries.
+
+Action 会显示当前微信版本、build 是否已验证、XWeb 状态、保护快照状态、watcher 状态和最近恢复日志。
+
+## Uninstall / 卸载
+
+Uninstall from Magisk and reboot.
+
+The uninstaller removes:
+
+```text
+/data/adb/wechat_xweb_guard/
+```
+
+including the protected snapshot and guard state. It does **not** delete the XWeb runtime currently installed inside WeChat.
+
+从 Magisk 卸载并重启即可。卸载会删除模块自己的保护快照、日志和状态，但**不会删除微信当前正在使用的 XWeb**。
+
+## Documentation / 详细文档
+
+- [中文详细说明](docs/README_CN.md)
+- [Detailed English documentation](docs/README_EN.md)
+- [Third-party binary notice / 第三方二进制声明](THIRD_PARTY_NOTICE.md)
+
+## License / 许可
+
+Guard source code: MIT License.
+
+The bundled XWeb runtime is third-party software and is covered by the redistribution authorization stated by the repository maintainer. The MIT license applies to the guard source code, not to third-party XWeb binaries.
+
+守护模块源码采用 MIT License。内置 XWeb 属于第三方二进制，其再分发依据维护者声明的授权；MIT License 仅适用于本项目守护代码，不自动覆盖第三方 XWeb 二进制。
+
+This project is not affiliated with or endorsed by Tencent, WeChat, Google, or Xiaomi.
+
+本项目与腾讯、微信、Google、小米无隶属或官方背书关系。

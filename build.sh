@@ -13,9 +13,9 @@ mkdir -p "$STAGE" "$OUT"
 rm -f "$ZIP"
 cp -a "$ROOT/module/." "$STAGE/"
 
-# Git on Windows can expose CRLF depending on checkout settings. Android
-# /system/bin/sh expects LF scripts, so normalize the release staging tree.
-find "$STAGE" -type f -exec sed -i 's/\r$//' {} +
+# Git on Windows can expose CRLF depending on checkout settings. Normalize
+# text files only; NEVER run sed across bundled binary assets.
+find "$STAGE" -type f \( -name '*.sh' -o -name '*.prop' -o -name '*.txt' -o -name '*.md' \) -exec sed -i 's/\r$//' {} +
 (
     cd "$STAGE"
     zip -qr "$ZIP" . -x '*.DS_Store'

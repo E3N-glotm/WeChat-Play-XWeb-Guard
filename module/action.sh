@@ -3,8 +3,17 @@ MODDIR=${0%/*}
 . "$MODDIR/bin/common.sh"
 
 echo "=== WeChat Play XWeb Guard ==="
-echo "Module: 1.1.0 / author E3N"
+echo "Module: 1.2.0 / author E3N"
 echo "WeChat versionCode: $(wechat_version_code)"
+if validated_wechat; then
+    echo "Build validation: validated target ($EXPECTED_VERSION_CODE)"
+else
+    if strict_build_mode; then
+        echo "Build validation: UNVALIDATED; strict-build mode blocks recovery"
+    else
+        echo "Build validation: UNVALIDATED; recovery remains enabled by user policy"
+    fi
+fi
 if live_core_healthy; then
     echo "Live XWeb $XWEB_VERSION: healthy"
 else

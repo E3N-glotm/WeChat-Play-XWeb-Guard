@@ -2,29 +2,32 @@
 
 **Author: E3N**  
 **Module ID: `wechat_xweb_guard`**  
-**Current public release: v1.1.0**
+**Version: v1.2.0**
 
 ## 1. Purpose
 
-Some Google Play builds of WeChat use a separate XWeb/Pinus runtime stored in WeChat's private application data. Because the runtime is relatively large, aggressive cleanup workflows can incorrectly treat it as disposable cache data.
+Some Google Play builds of WeChat use a separate XWeb/Pinus runtime stored in WeChat's private application data. Aggressive root cleanup workflows can mistakenly remove this relatively large runtime.
 
-On the validated device, removal of XWeb 1160289 caused symptoms such as:
+On the validated device, removal of XWeb 1160289 caused:
 
-- WeChat no longer reporting XWeb 1160289 as the active core;
-- Mini Programs or web pages showing an “upgrading” state again;
+- XWeb 1160289 no longer being selected;
+- Mini Programs/web pages showing an “upgrading” state again;
 - `app_xweb_data/xweb_1160289` becoming missing or incomplete;
 - temporary fallback to the system WebView;
-- the need to reinstall XWeb even though the WeChat application version itself had not changed.
+- the need to reinstall XWeb even though the WeChat APK itself had not changed.
 
-WeChat Play XWeb Guard has one intentionally narrow goal:
+This module has a narrow purpose: **keep a verified XWeb 1160289 static runtime snapshot and restore it after accidental deletion.**
 
-> Protect an already healthy, locally installed XWeb runtime from accidental deletion and restore its verified static runtime files when required.
+## 2. What changed in v1.2.0
 
-It is **not** a WeChat patcher, XWeb downloader, downgrade utility, FCM module, or LSPosed/Zygisk hook.
+v1.2.0 introduces two policy changes:
 
-## 2. Validated compatibility
+1. The Release ZIP **directly bundles the authorized XWeb 1160289 static runtime snapshot**.
+2. A WeChat versionCode change **no longer automatically disables recovery**.
 
-The current automatic recovery policy is locked to:
+As a result, a new user can install v1.2.0 and recover XWeb 1160289 even if the current WeChat XWeb directory is already empty. No APKM is required.
+
+## 3. Validated reference environment
 
 | Item | Validated value |
 |---|---|
@@ -33,74 +36,100 @@ The current automatic recovery policy is locked to:
 | versionCode | `3141` |
 | XWeb | `1160289` |
 | ABI | `arm64-v8a` |
-| Root environment | Magisk-compatible |
+| Root | Magisk-compatible |
 
-This strict check is deliberate. If WeChat is upgraded and the versionCode changes, the guard will **not** inject XWeb 1160289 into the unknown build.
+versionCode 3141 is a **directly tested reference**, not a default recovery block.
 
-## 3. Why the release does not bundle the 240 MB XWeb snapshot
+On a different WeChat versionCode, v1.2.0:
 
-The original private prototype stored a local XWeb snapshot directly inside the module directory. That snapshot was approximately 240 MB.
+- reports the build as unvalidated;
+- continues protecting/restoring XWeb 1160289 by default;
+- does not downgrade WeChat;
+- leaves compatibility judgment to the user.
 
-Public v1.1.0 changes the model to:
+Optional strict mode:
 
-> **Publish the guard code; generate the XWeb snapshot locally from the user's own healthy installation.**
+```sh
+su -c 'touch /data/adb/wechat_xweb_guard/strict_build'
+```
 
-The GitHub source tree and Release ZIP do not contain:
+With strict mode enabled, automatic recovery is limited to versionCode 3141.
 
-- `libxwebcore.so`;
-- XWeb `base.zip`;
-- XWeb `base.apk`;
-- WeChat APK files;
+Return to the default cross-build policy:
+
+```sh
+su -c 'rm -f /data/adb/wechat_xweb_guard/strict_build'
+```
+
+## 4. Bundled snapshot and privacy scrub
+
+The Release ZIP includes:
+
+```text
+assets/core_1160289.tar
+assets/core_1160289.sha256
+```
+
+Snapshot SHA256:
+
+```text
+09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
+```
+
+The archive contains exactly ten static XWeb entries:
+
+```text
+apk/base.apk
+extracted_xwalkcore/
+extracted_xwalkcore/dummy.dat
+extracted_xwalkcore/libxwebcore.so
+extracted_xwalkcore/libWXAMSDK.so
+extracted_xwalkcore/libffmpeg.so
+extracted_xwalkcore/media_player_extension.apk
+extracted_xwalkcore/filelist.config
+extracted_xwalkcore/reslist.config
+zip/base.zip
+```
+
+It contains no:
+
+- `Default`;
+- `Profile`;
+- `Cookies`;
+- `History`;
+- `Login`;
+- `MicroMsg`;
+- FCM credentials;
 - chat data;
-- account data.
+- account records.
 
-When a healthy compatible runtime exists, the module creates:
+“Privacy scrubbed” here means the distributed archive contains no user-data/profile paths. The XWeb binaries themselves are not modified for “scrubbing.”
+
+The maintainer **E3N states that they hold authorization to publicly redistribute these XWeb binary files**.
+
+## 5. Installation behavior
+
+`customize.sh`:
+
+1. requires `arm64-v8a`;
+2. creates `/data/adb/wechat_xweb_guard/`;
+3. reads the bundled snapshot checksum;
+4. calculates the SHA256 of the bundled tar;
+5. aborts if the checksum differs;
+6. moves the verified snapshot into the private guard directory;
+7. verifies the moved copy again;
+8. keeps only one persistent copy after installation.
+
+The protected files are:
 
 ```text
 /data/adb/wechat_xweb_guard/core_1160289.tar
 /data/adb/wechat_xweb_guard/core_1160289.sha256
 ```
 
-These files are generated locally on the rooted device and are not part of the public distribution.
+## 6. Event-driven watcher
 
-## 4. Architecture
-
-### 4.1 Installation
-
-`customize.sh`:
-
-1. requires `arm64-v8a`;
-2. creates `/data/adb/wechat_xweb_guard`;
-3. can migrate a verified snapshot from the earlier private prototype;
-4. verifies WeChat versionCode 3141;
-5. checks the local XWeb 1160289 structure;
-6. creates a whitelist-only local archive;
-7. records a SHA256 checksum.
-
-If XWeb is already missing at install time, the module does not fabricate a core. It remains passive until a healthy compatible core later becomes available.
-
-### 4.2 Health criteria
-
-The current target is validated using the following static file sizes:
-
-```text
-extracted_xwalkcore/libxwebcore.so = 135166832 bytes
-apk/base.apk                       =  33171682 bytes
-zip/base.zip                       =  70436321 bytes
-```
-
-The module also requires:
-
-```text
-extracted_xwalkcore/filelist.config
-extracted_xwalkcore/dummy.dat
-```
-
-These are version-specific guards, not a generic XWeb detector.
-
-### 4.3 Event-driven watcher
-
-`watch.sh` launches BusyBox `inotifyd` and normally sleeps in the kernel until a relevant file or directory is removed/moved.
+`watch.sh` launches BusyBox `inotifyd`.
 
 Watched paths include:
 
@@ -113,47 +142,28 @@ Watched paths include:
 .../xweb_1160289/zip/
 ```
 
-When a watched runtime path disappears, `event.sh` invokes `repair.sh`.
+The healthy-state design does not scan the XWeb tree every second. `inotifyd` normally sleeps in the kernel until a relevant file-system event occurs.
 
-Recovered directories receive new inodes, so the event handler terminates only its parent `inotifyd`; the outer watcher then re-arms watches against the replacement directories.
+When a protected file/directory is deleted or moved, `event.sh` invokes `repair.sh`.
 
-## 5. Recovery policy
+Recovered directories receive new inodes, so the event handler terminates only its parent `inotifyd`; the outer watcher then subscribes to the replacement paths.
 
-Automatic recovery requires all of the following:
+## 7. Automatic recovery conditions
+
+In the default policy, recovery requires:
 
 1. WeChat application data still exists;
-2. the `MicroMsg` directory exists, preventing reconstruction after an intentional full data clear;
-3. WeChat versionCode is still 3141;
-4. the XWeb runtime is missing or incomplete;
-5. the private local snapshot exists;
-6. the snapshot SHA256 verifies successfully.
+2. `MicroMsg` exists, preventing reconstruction after an intentional full app-data clear;
+3. XWeb 1160289 static runtime is missing or incomplete;
+4. the protected snapshot exists;
+5. the snapshot SHA256 verifies;
+6. if `strict_build` is enabled, WeChat versionCode must be 3141.
 
-Recovery does **not**:
+There is no default build-number block in v1.2.0.
 
-- force-stop WeChat;
-- clear chats;
-- change FCM tokens;
-- change global Android properties;
-- disable SELinux;
-- install LSPosed/Zygisk hooks;
-- overwrite the WebView `Default` profile;
-- overwrite dex/oat state.
+## 8. Files restored
 
-Only whitelisted static XWeb runtime files are restored.
-
-If WeChat has cleared the XWeb selection preference after the files disappeared, the guard may restore:
-
-```xml
-<boolean name="using_core_version_1160289" value="true" />
-```
-
-This happens only under the versionCode 3141 + verified local snapshot policy.
-
-## 6. Privacy model
-
-The snapshot is created with an explicit whitelist rather than archiving the full XWeb directory.
-
-Allowed files:
+Only the static runtime whitelist is restored:
 
 ```text
 apk/base.apk
@@ -167,51 +177,66 @@ extracted_xwalkcore/libffmpeg.so
 extracted_xwalkcore/media_player_extension.apk
 ```
 
-The snapshot is rejected if its path list contains profile/private-data names such as:
+The guard does not overwrite:
 
-```text
-Default
-Profile
-Cookies
-History
-Login
-MicroMsg
+- WebView `Default` profile data;
+- cookies/history;
+- dex/oat runtime state;
+- chats;
+- FCM identity;
+- account information.
+
+WeChat is not force-stopped as part of recovery.
+
+## 9. XWeb selection preference
+
+If the static runtime has been restored but WeChat previously cleared the selection preference, the guard may restore:
+
+```xml
+<boolean name="using_core_version_1160289" value="true" />
 ```
 
-The snapshot is therefore an XWeb runtime recovery artifact, not a WeChat/account backup.
+On an unvalidated WeChat build, the action is explicitly logged as a warning.
 
-## 7. Installation
+## 10. Installation
 
-1. Download `WeChat-Play-XWeb-Guard-v1.1.0.zip` from GitHub Releases.
-2. Install it from Magisk.
-3. Review the installer output:
-   - `Local XWeb 1160289 snapshot is ready` means protection is active;
-   - otherwise the module stays passive until it sees a healthy compatible XWeb.
-4. Reboot.
+Download:
 
-## 8. Magisk Action
+```text
+WeChat-Play-XWeb-Guard-v1.2.0.zip
+```
 
-The module exposes an Action diagnostics entry that reports:
+from GitHub Releases and install it from Magisk.
+
+Successful installation should report:
+
+```text
+Bundled XWeb 1160289 snapshot verified and installed.
+```
+
+No APKM is required.
+
+## 11. Magisk Action
+
+The Action entry reports:
 
 - current WeChat versionCode;
-- whether live XWeb 1160289 is healthy;
-- whether the protected local snapshot is valid;
-- watcher PID/running state;
-- recent guard log entries.
+- validated/unvalidated build state;
+- whether unvalidated-build recovery is allowed;
+- live XWeb health;
+- protected snapshot verification;
+- watcher PID/state;
+- recent recovery log entries.
 
-If the live core is healthy but the snapshot is missing, Action attempts to bootstrap it.
+## 12. Diagnostics
 
-If the live core is missing and the snapshot is valid, Action performs a repair check.
-
-## 9. Diagnostics
-
-Log:
+Guard log:
 
 ```sh
 su -c 'cat /data/adb/wechat_xweb_guard/guard.log'
 ```
 
-Snapshot integrity:
+Snapshot verification:
 
 ```sh
 su -c 'cd /data/adb/wechat_xweb_guard && /data/adb/magisk/busybox sha256sum -c core_1160289.sha256'
@@ -223,81 +248,80 @@ Watcher:
 su -c 'cat /data/adb/wechat_xweb_guard/watcher.pid'
 ```
 
-WeChat version:
+WeChat build:
 
 ```sh
 su -c "dumpsys package com.tencent.mm | grep -E 'versionCode=|versionName='"
 ```
 
-XWeb selection preference:
+XWeb preference:
 
 ```sh
 su -c 'cat /data_mirror/data_ce/null/0/com.tencent.mm/shared_prefs/xweb_using_core_version.xml'
 ```
 
-## 10. Battery impact
+## 13. Battery impact
 
-The healthy-state design is event driven. BusyBox `inotifyd` blocks until a filesystem event occurs instead of scanning the XWeb directory every second.
+The guard is event driven, not a high-frequency scanner.
 
-The outer watcher uses short sleeps only when credential-encrypted app data is not yet available after boot, or when an inotify watch must be re-armed after directory replacement.
+BusyBox `inotifyd` normally blocks in the kernel. The outer watcher briefly sleeps/re-arms only when:
 
-## 11. Uninstall
+- credential-encrypted data is not yet available after boot;
+- a restored directory has a new inode;
+- `inotifyd` exits and watches must be rebuilt.
 
-Uninstall the module from Magisk and reboot.
+## 14. Why not chmod/chattr
 
-`uninstall.sh` removes:
+`chmod` does not reliably protect files from root cleanup tools and may interfere with WeChat's own access.
+
+`chattr +i` can block legitimate XWeb replacement/upgrades and can still be removed by root software.
+
+The module therefore allows WeChat to manage its directory normally and restores the runtime only after deletion.
+
+## 15. WeChat upgrades
+
+Default v1.2.0 behavior:
+
+- versionCode changes: XWeb 1160289 recovery continues;
+- Action/log output: UNVALIDATED warning;
+- if the user confirms it works: no action required;
+- if incompatible: disable/uninstall the module or enable `strict_build`.
+
+The module does not make the compatibility decision for the user.
+
+## 16. Uninstall
+
+Uninstall from Magisk and reboot.
+
+The uninstaller stops the watcher and deletes:
 
 ```text
 /data/adb/wechat_xweb_guard/
 ```
 
-including the local snapshot, checksum, log, and watcher state.
+including the protected snapshot, checksum, log, and runtime state.
 
 It does **not** remove the XWeb runtime currently installed inside WeChat.
 
-## 12. WeChat upgrades
+## 17. Validation history
 
-When WeChat changes to a different versionCode:
+Development validation includes:
 
-- the old XWeb snapshot is not automatically restored;
-- WeChat is not downgraded;
-- the new WeChat XWeb state is not overwritten;
-- the old private snapshot remains until module uninstall or a future module release explicitly supports the new version.
+- single protected-file removal → automatic recovery;
+- whole `zip` subdirectory removal → automatic recovery;
+- watcher re-arm after reconstructed directories;
+- XWeb internal file checksum validation;
+- actual `libxwebcore.so` mapping in a WeChat process;
+- unchanged FCM identity during XWeb repair;
+- no user profile/chat paths in the bundled tar;
+- release-time SHA256 and archive path checks.
 
-This is intentionally safer than making the XWeb directory immutable.
+## 18. License and third-party notice
 
-## 13. Why not chmod or chattr +i
+The guard source code is MIT licensed.
 
-`chmod` cannot reliably stop a root cleanup tool from deleting the directory, while overly restrictive permissions can interfere with WeChat itself.
+Bundled XWeb 1160289 is third-party software. The maintainer **E3N states that they hold authorization to publicly redistribute these XWeb binary files**.
 
-`chattr +i` is stronger, but can block legitimate XWeb replacement/upgrades and can still be cleared by root software.
-
-The module instead allows WeChat to manage its own runtime normally and provides recovery only after accidental deletion.
-
-## 14. Validation history
-
-The private prototype was tested with:
-
-- single protected-file deletion;
-- whole XWeb subdirectory removal;
-- watcher re-arm after directory reconstruction;
-- repeated real cleanup-triggered recovery events.
-
-Public v1.1.0 keeps that event/repair model, but moves the protected XWeb snapshot out of the release and generates it locally.
-
-## 15. Limitations and risk
-
-- Any root module can affect system stability; keep a working Magisk recovery path.
-- The current compatibility target is intentionally narrow.
-- WeChat's private directory layout is undocumented and may change.
-- The module will not reconstruct WeChat after an intentional full application-data clear.
-- A damaged snapshot fails closed when SHA256 verification fails.
-- The module is not a replacement for WeChat's own XWeb installer/updater.
-
-## 16. License and third-party notice
-
-The module source code is MIT licensed.
-
-WeChat, XWeb, and their binaries belong to their respective rights holders. This repository contains no WeChat/XWeb binaries and provides no third-party XWeb download.
+The MIT license applies to the guard source code and does not alter ownership/licensing of the bundled third-party XWeb runtime.
 
 This project is not affiliated with or endorsed by Tencent, WeChat, Google, or Xiaomi.
