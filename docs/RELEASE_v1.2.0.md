@@ -39,3 +39,23 @@ Users can therefore recover XWeb even when the current WeChat XWeb directory is 
 - No forced WeChat stop, FCM token modification, LSPosed, or Zygisk.
 
 The maintainer E3N states that they hold authorization to publicly redistribute the bundled XWeb binaries.
+
+## Verification / 校验
+
+GitHub Actions:
+
+```text
+36660852984 — success
+```
+
+Release ZIP SHA256:
+
+```text
+0ed6fd4264627441b6c91aa2ad116ef76cacb381aa48478b65f0744fa6f71980
+```
+
+Bundled XWeb snapshot SHA256:
+
+```text
+09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
+```
