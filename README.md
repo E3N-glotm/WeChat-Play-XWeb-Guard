@@ -41,9 +41,9 @@ The compatibility checks are intentionally strict. If WeChat is upgraded to a di
 
 ## Install / 安装
 
-Download the ZIP from [Releases](../../releases), install it in Magisk, then reboot.
+Download the ZIP from [Releases](https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases), install it in Magisk, then reboot.
 
-从 [Releases](../../releases) 下载 ZIP，在 Magisk 中安装并重启。
+从 [Releases](https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases) 下载 ZIP，在 Magisk 中安装并重启。
 
 If the compatible XWeb core is healthy at installation time, the local snapshot is created immediately. Otherwise the module remains passive and will bootstrap a snapshot later when a healthy compatible XWeb appears.
 
