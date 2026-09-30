@@ -1,0 +1,6 @@
+id=wechat_xweb_guard
+name=WeChat Play XWeb Guard
+version=1.1.0
+versionCode=110
+author=E3N
+description=Event-driven local backup and self-repair for the validated WeChat Play 8.0.77 (3141) XWeb 1160289 core. No bundled WeChat/XWeb binaries.

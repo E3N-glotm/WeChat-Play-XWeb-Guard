@@ -1,0 +1,33 @@
+name: Build Magisk module
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: |
+          for f in module/*.sh module/bin/*.sh tests/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Policy regression
+        run: sh tests/test_policy.sh
+
+      - name: Build and validate public release
+        run: |
+          chmod +x build.sh
+          ./build.sh
+          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.1.0.zip
+          sha256sum dist/WeChat-Play-XWeb-Guard-v1.1.0.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WeChat-Play-XWeb-Guard
+          path: dist/*.zip
