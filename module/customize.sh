@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 ui_print "============================================"
-ui_print " WeChat Play XWeb Guard v1.2.0"
+ui_print " WeChat Play XWeb Guard v1.2.1"
 ui_print " Author: E3N"
 ui_print "============================================"
 
@@ -81,5 +81,9 @@ fi
 
 ui_print "- XWeb 1160289 recovery is available immediately after install."
 ui_print "- Build changes only trigger a warning; recovery remains enabled."
+MODDIR=$MODPATH
+. "$MODPATH/bin/common.sh"
+sync_module_description || true
+ui_print "- Last restore shown in Magisk: $(last_restore_display)"
 ui_print "- Optional strict mode: touch /data/adb/wechat_xweb_guard/strict_build"
 ui_print "- Reboot after installation."

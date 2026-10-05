@@ -2,7 +2,7 @@
 
 **作者：E3N**  
 **模块 ID：`wechat_xweb_guard`**  
-**版本：v1.2.0**
+**版本：v1.2.1**
 
 ## 1. 解决的问题
 
@@ -208,7 +208,7 @@ extracted_xwalkcore/media_player_extension.apk
 从 GitHub Releases 下载：
 
 ```text
-WeChat-Play-XWeb-Guard-v1.2.0.zip
+WeChat-Play-XWeb-Guard-v1.2.1.zip
 ```
 
 然后：
@@ -305,6 +305,42 @@ v1.2.0 默认策略：
 - 用户发现不兼容：可以禁用模块、卸载模块，或者启用 `strict_build`。
 
 模块不会自行替用户判断“新 build 一定兼容”或“一定不兼容”。
+
+## 最近一次成功恢复时间
+
+从 v1.2.1 开始，每次 `repair.sh` 完整恢复成功后会写入：
+
+```text
+/data/adb/wechat_xweb_guard/last_restore.txt
+```
+
+时间格式：
+
+```text
+YYYY-MM-DD HH:MM:SS ±ZZZZ
+```
+
+例如：
+
+```text
+2026-10-05 12:11:16 +0800
+```
+
+模块同时动态更新已安装目录中的 `module.prop`：
+
+```text
+description=XWeb 1160289 guard | Last restore: 2026-10-05 12:11:16 +0800
+```
+
+因此重新进入或刷新 Magisk 模块页后，可以直接在模块卡片看到最近一次恢复时间。
+
+如果模块从未完成过一次恢复，则显示：
+
+```text
+Last restore: never
+```
+
+模块更新不会主动删除 `last_restore.txt`，历史时间可以保留；也不会为了刷新模块卡片而强制停止 Magisk。
 
 ## 16. 卸载
 

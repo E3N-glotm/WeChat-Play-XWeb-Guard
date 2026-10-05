@@ -3,8 +3,10 @@ MODDIR=${0%/*}
 . "$MODDIR/bin/common.sh"
 
 echo "=== WeChat Play XWeb Guard ==="
-echo "Module: 1.2.0 / author E3N"
+sync_module_description || true
+echo "Module: 1.2.1 / author E3N"
 echo "WeChat versionCode: $(wechat_version_code)"
+echo "Last successful restore: $(last_restore_display)"
 if validated_wechat; then
     echo "Build validation: validated target ($EXPECTED_VERSION_CODE)"
 else

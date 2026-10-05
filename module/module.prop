@@ -1,6 +1,6 @@
 id=wechat_xweb_guard
 name=WeChat Play XWeb Guard
-version=1.2.0
-versionCode=120
+version=1.2.1
+versionCode=121
 author=E3N
-description=Event-driven XWeb 1160289 guard. Recovery stays enabled across WeChat build changes unless the user enables strict-build mode.
+description=XWeb 1160289 guard | Last restore: never

@@ -108,5 +108,6 @@ if ! grep -Fq "using_core_version_$XWEB_VERSION" "$PREF" 2>/dev/null; then
     mv -f "$Q" "$PREF"
 fi
 
-log_msg "RESTORED: XWeb $XWEB_VERSION after $MODE; WeChat process was not killed"
+record_restore_timestamp
+log_msg "RESTORED: XWeb $XWEB_VERSION after $MODE at $(last_restore_display); WeChat process was not killed"
 exit 0

@@ -2,7 +2,7 @@
 
 **Author: E3N**  
 **Module ID: `wechat_xweb_guard`**  
-**Version: v1.2.0**
+**Version: v1.2.1**
 
 ## 1. Purpose
 
@@ -203,7 +203,7 @@ On an unvalidated WeChat build, the action is explicitly logged as a warning.
 Download:
 
 ```text
-WeChat-Play-XWeb-Guard-v1.2.0.zip
+WeChat-Play-XWeb-Guard-v1.2.1.zip
 ```
 
 from GitHub Releases and install it from Magisk.
@@ -288,6 +288,42 @@ Default v1.2.0 behavior:
 - if incompatible: disable/uninstall the module or enable `strict_build`.
 
 The module does not make the compatibility decision for the user.
+
+## Last successful recovery timestamp
+
+Starting with v1.2.1, every fully successful `repair.sh` run writes:
+
+```text
+/data/adb/wechat_xweb_guard/last_restore.txt
+```
+
+Timestamp format:
+
+```text
+YYYY-MM-DD HH:MM:SS ±ZZZZ
+```
+
+Example:
+
+```text
+2026-10-05 12:11:16 +0800
+```
+
+The module also rewrites the installed `module.prop` description:
+
+```text
+description=XWeb 1160289 guard | Last restore: 2026-10-05 12:11:16 +0800
+```
+
+Magisk therefore shows the same value on the module card after the module list is refreshed or reopened.
+
+Before the first successful recovery:
+
+```text
+Last restore: never
+```
+
+Module upgrades preserve `last_restore.txt`. The guard does not force-stop Magisk merely to refresh the UI.
 
 ## 16. Uninstall
 

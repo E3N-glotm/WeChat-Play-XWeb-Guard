@@ -5,12 +5,18 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 grep -q '^author=E3N$' "$ROOT/module/module.prop" || fail "module author must be E3N"
-grep -q '^version=1.2.0$' "$ROOT/module/module.prop" || fail "unexpected module version"
+grep -q '^version=1.2.1$' "$ROOT/module/module.prop" || fail "unexpected module version"
+grep -q '^versionCode=121$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
+grep -q '^description=XWeb 1160289 guard | Last restore: never$' "$ROOT/module/module.prop" +    || fail "initial Magisk last-restore description missing"
 grep -q 'EXPECTED_VERSION_CODE=3141' "$ROOT/module/bin/common.sh" || fail "validated reference build missing"
 grep -q 'XWEB_VERSION=1160289' "$ROOT/module/bin/common.sh" || fail "XWeb version guard missing"
 grep -q 'EXPECTED_SNAPSHOT_SHA=09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619' "$ROOT/module/bin/common.sh" || fail "hardcoded bundled snapshot digest missing"
 grep -q 'strict_build_mode' "$ROOT/module/bin/common.sh" || fail "user strict-build switch missing"
 grep -q 'recovery_allowed' "$ROOT/module/bin/repair.sh" || fail "repair policy hook missing"
+grep -q 'record_restore_timestamp' "$ROOT/module/bin/repair.sh" || fail "successful repair does not record timestamp"
+grep -q 'LAST_RESTORE=' "$ROOT/module/bin/common.sh" || fail "persistent restore timestamp path missing"
+grep -q 'sync_module_description' "$ROOT/module/bin/common.sh" || fail "dynamic Magisk description updater missing"
+grep -q 'Last successful restore:' "$ROOT/module/action.sh" || fail "Action does not display last restore time"
 
 if grep -q 'supported_wechat || exit 0' "$ROOT/module/bin/repair.sh"; then
     fail "repair must not hard-stop merely because WeChat build changed"

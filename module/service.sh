@@ -2,11 +2,13 @@
 MODDIR=${0%/*}
 RUNDIR=/data/adb/wechat_xweb_guard
 PIDFILE=$RUNDIR/watcher.pid
+. "$MODDIR/bin/common.sh"
 
 [ -f "$MODDIR/disable" ] && exit 0
 mkdir -p "$RUNDIR"
 chmod 700 "$RUNDIR"
 chmod 0755 "$MODDIR"/bin/*.sh 2>/dev/null || true
+sync_module_description || true
 
 if [ -s "$PIDFILE" ]; then
     PID=$(cat "$PIDFILE" 2>/dev/null)

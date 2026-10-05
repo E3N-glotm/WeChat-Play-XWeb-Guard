@@ -26,8 +26,8 @@ jobs:
         run: |
           chmod +x build.sh
           ./build.sh
-          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.2.0.zip
-          sha256sum dist/WeChat-Play-XWeb-Guard-v1.2.0.zip
+          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.2.1.zip
+          sha256sum dist/WeChat-Play-XWeb-Guard-v1.2.1.zip
 
       - uses: actions/upload-artifact@v4
         with:

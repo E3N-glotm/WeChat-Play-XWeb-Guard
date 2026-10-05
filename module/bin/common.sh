@@ -21,6 +21,7 @@ SNAPSHOT_SHA=$RUNDIR/core_$XWEB_VERSION.sha256
 LOG=$RUNDIR/guard.log
 LOCK=$RUNDIR/repair.lock
 WATCHER_PID=$RUNDIR/watcher.pid
+LAST_RESTORE=$RUNDIR/last_restore.txt
 
 CORE_SIZE=135166832
 BASE_APK_SIZE=33171682
@@ -79,4 +80,50 @@ app_data_ready() {
 
 app_context() {
     ls -Zd "$D/shared_prefs" 2>/dev/null | awk '{print $1}'
+}
+
+last_restore_display() {
+    if [ -s "$LAST_RESTORE" ]; then
+        tr -d '\r\n' < "$LAST_RESTORE"
+    else
+        printf '%s' never
+    fi
+}
+
+sync_module_description() {
+    ensure_rundir
+    PROP=$MODDIR/module.prop
+    [ -f "$PROP" ] || return 0
+
+    TS=$(last_restore_display)
+    DESC="XWeb 1160289 guard | Last restore: $TS"
+    TMP=$RUNDIR/.module_prop.$$
+
+    awk -v d="$DESC" '
+        BEGIN { found=0 }
+        /^description=/ {
+            print "description=" d
+            found=1
+            next
+        }
+        { print }
+        END {
+            if (!found) print "description=" d
+        }
+    ' "$PROP" > "$TMP" || {
+        rm -f "$TMP"
+        return 1
+    }
+
+    cat "$TMP" > "$PROP"
+    chmod 0644 "$PROP" 2>/dev/null || true
+    rm -f "$TMP"
+}
+
+record_restore_timestamp() {
+    ensure_rundir
+    TS=$(date '+%Y-%m-%d %H:%M:%S %z')
+    printf '%s\n' "$TS" > "$LAST_RESTORE"
+    chmod 0600 "$LAST_RESTORE" 2>/dev/null || true
+    sync_module_description || true
 }
