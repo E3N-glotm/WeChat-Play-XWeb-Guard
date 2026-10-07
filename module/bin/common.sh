@@ -12,9 +12,11 @@ XWEB_VERSION=1160289
 EXPECTED_SNAPSHOT_SHA=09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
 
 D=/data_mirror/data_ce/null/0/$WXPKG
+SP=$D/shared_prefs
 P=$D/app_xweb_data
 X=$P/xweb_$XWEB_VERSION
-PREF=$D/shared_prefs/xweb_using_core_version.xml
+PREF=$SP/xweb_using_core_version.xml
+META=$SP/XWALKINFOS.xml
 
 SNAPSHOT=$RUNDIR/core_$XWEB_VERSION.tar
 SNAPSHOT_SHA=$RUNDIR/core_$XWEB_VERSION.sha256
@@ -75,11 +77,64 @@ snapshot_valid() {
 }
 
 app_data_ready() {
-    [ -d "$D/shared_prefs" ] && [ -d "$D/MicroMsg" ]
+    [ -d "$SP" ] && [ -d "$D/MicroMsg" ]
 }
 
 app_context() {
-    ls -Zd "$D/shared_prefs" 2>/dev/null | awk '{print $1}'
+    ls -Zd "$SP" 2>/dev/null | awk '{print $1}'
+}
+
+xwalk_meta_healthy() {
+    grep -Eq 'name="back_core_version_for_arm64-v8a"[[:space:]]+value="1160289"' "$META" 2>/dev/null
+}
+
+repair_xwalk_meta() {
+    UIDN=$(stat -c %u "$D" 2>/dev/null) || return 1
+    GIDN=$(stat -c %g "$D" 2>/dev/null) || return 1
+    CTX=$(app_context)
+    [ -n "$CTX" ] || return 1
+    Q=$SP/.XWALKINFOS.guard_$$
+
+    if [ -f "$META" ] && grep -q '</map>' "$META" 2>/dev/null; then
+        awk '
+            BEGIN { done=0 }
+            /name="back_core_version_for_arm64-v8a"/ {
+                print "    <int name=\"back_core_version_for_arm64-v8a\" value=\"1160289\" />"
+                done=1
+                next
+            }
+            /<\/map>/ && !done {
+                print "    <int name=\"back_core_version_for_arm64-v8a\" value=\"1160289\" />"
+                done=1
+            }
+            { print }
+        ' "$META" > "$Q" || {
+            rm -f "$Q"
+            return 1
+        }
+    else
+        printf "%s\n" +            "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" +            '<map>' +            '    <int name="back_core_version_for_arm64-v8a" value="1160289" />' +            '</map>' > "$Q"
+    fi
+
+    chown "$UIDN:$GIDN" "$Q"
+    chmod 660 "$Q"
+    chcon "$CTX" "$Q"
+    mv -f "$Q" "$META"
+    xwalk_meta_healthy
+}
+
+ensure_using_core_pref() {
+    grep -Fq "using_core_version_$XWEB_VERSION" "$PREF" 2>/dev/null && return 0
+    UIDN=$(stat -c %u "$D" 2>/dev/null) || return 1
+    GIDN=$(stat -c %g "$D" 2>/dev/null) || return 1
+    CTX=$(app_context)
+    [ -n "$CTX" ] || return 1
+    Q=$SP/.xweb_guard_pref_$$
+    printf "%s\n" +        "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" +        '<map>' +        "    <boolean name=\"using_core_version_$XWEB_VERSION\" value=\"true\" />" +        '</map>' > "$Q"
+    chown "$UIDN:$GIDN" "$Q"
+    chmod 660 "$Q"
+    chcon "$CTX" "$Q"
+    mv -f "$Q" "$PREF"
 }
 
 last_restore_display() {

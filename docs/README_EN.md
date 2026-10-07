@@ -2,7 +2,7 @@
 
 **Author: E3N**  
 **Module ID: `wechat_xweb_guard`**  
-**Version: v1.2.1**
+**Version: v1.2.2**
 
 ## 1. Purpose
 

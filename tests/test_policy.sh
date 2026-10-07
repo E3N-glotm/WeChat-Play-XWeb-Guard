@@ -5,8 +5,8 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 grep -q '^author=E3N$' "$ROOT/module/module.prop" || fail "module author must be E3N"
-grep -q '^version=1.2.1$' "$ROOT/module/module.prop" || fail "unexpected module version"
-grep -q '^versionCode=121$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
+grep -q '^version=1.2.2$' "$ROOT/module/module.prop" || fail "unexpected module version"
+grep -q '^versionCode=122$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
 grep -q '^description=XWeb 1160289 guard | Last restore: never$' "$ROOT/module/module.prop" +    || fail "initial Magisk last-restore description missing"
 grep -q 'EXPECTED_VERSION_CODE=3141' "$ROOT/module/bin/common.sh" || fail "validated reference build missing"
 grep -q 'XWEB_VERSION=1160289' "$ROOT/module/bin/common.sh" || fail "XWeb version guard missing"
@@ -17,6 +17,12 @@ grep -q 'record_restore_timestamp' "$ROOT/module/bin/repair.sh" || fail "success
 grep -q 'LAST_RESTORE=' "$ROOT/module/bin/common.sh" || fail "persistent restore timestamp path missing"
 grep -q 'sync_module_description' "$ROOT/module/bin/common.sh" || fail "dynamic Magisk description updater missing"
 grep -q 'Last successful restore:' "$ROOT/module/action.sh" || fail "Action does not display last restore time"
+grep -q 'XWALKINFOS.xml' "$ROOT/module/bin/common.sh" || fail "XWALKINFOS metadata path missing"
+grep -q 'back_core_version_for_arm64-v8a' "$ROOT/module/bin/common.sh" || fail "XWeb core-version metadata repair missing"
+grep -q 'xwalk_meta_healthy' "$ROOT/module/bin/repair.sh" || fail "repair path does not validate XWALKINFOS"
+grep -q 'repair_xwalk_meta' "$ROOT/module/bin/repair.sh" || fail "repair path does not restore XWALKINFOS"
+grep -q 'META:cwDMx' "$ROOT/module/bin/watch.sh" || fail "watcher does not monitor XWALKINFOS changes"
+grep -q '"$META"' "$ROOT/module/bin/event.sh" || fail "event handler does not process XWALKINFOS"
 
 if grep -q 'supported_wechat || exit 0' "$ROOT/module/bin/repair.sh"; then
     fail "repair must not hard-stop merely because WeChat build changed"

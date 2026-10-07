@@ -7,27 +7,30 @@ trap 'rm -f "$WATCHER_PID"' EXIT HUP INT TERM
 
 while :; do
     # CE storage may be unavailable until first unlock after boot.
-    [ -d "$D/shared_prefs" ] && [ -d "$P" ] || {
+    [ -d "$SP" ] && [ -d "$P" ] || {
         sleep 8
         continue
     }
 
-    # Normally v1.2.0 already installed the bundled verified snapshot.
-    # Keep local bootstrap as a fallback if the private snapshot is manually
-    # removed while a healthy XWeb 1160289 still exists.
+    # The bundled snapshot is installed into the private runtime directory.
+    # Keep local bootstrap as a fallback if that snapshot is manually removed
+    # while a healthy XWeb 1160289 still exists.
     snapshot_valid || "$MODDIR/bin/snapshot.sh" ensure >/dev/null 2>&1 || true
     "$MODDIR/bin/repair.sh" boot
 
     # No periodic scanning while healthy: inotifyd sleeps in the kernel until
-    # a relevant path is removed/moved. Watch only paths that currently exist.
-    if [ -d "$X/extracted_xwalkcore" ] && [ -d "$X/apk" ] && [ -d "$X/zip" ]; then
-        "$BB" inotifyd "$MODDIR/bin/event.sh" \
-            "$D:dm" "$P:dm" "$X:dm" \
-            "$X/extracted_xwalkcore:dm" "$X/apk:dm" "$X/zip:dm"
-    elif [ -d "$X" ]; then
-        "$BB" inotifyd "$MODDIR/bin/event.sh" "$D:dm" "$P:dm" "$X:dm"
+    # a relevant XWeb path or XWALKINFOS metadata event occurs.
+    set -- "$D:dm" "$P:dm"
+    [ -d "$X" ] && set -- "$@" "$X:dm"
+    [ -d "$X/extracted_xwalkcore" ] && set -- "$@" "$X/extracted_xwalkcore:dm"
+    [ -d "$X/apk" ] && set -- "$@" "$X/apk:dm"
+    [ -d "$X/zip" ] && set -- "$@" "$X/zip:dm"
+    if [ -f "$META" ]; then
+        set -- "$@" "$META:cwDMx"
     else
-        "$BB" inotifyd "$MODDIR/bin/event.sh" "$D:dm" "$P:dm"
+        set -- "$@" "$SP:nymd"
     fi
+
+    "$BB" inotifyd "$MODDIR/bin/event.sh" "$@"
     sleep 5
 done

@@ -12,6 +12,7 @@ fi
 
 # A deliberate uninstall / full app-data reset should not be reconstructed.
 app_data_ready || exit 0
+
 if ! validated_wechat; then
     log_msg "WARNING: restoring XWeb $XWEB_VERSION on unvalidated WeChat versionCode=$(wechat_version_code)"
 fi
@@ -19,10 +20,34 @@ recovery_allowed || {
     log_msg "SKIP: strict-build mode blocks recovery on versionCode=$(wechat_version_code)"
     exit 0
 }
-live_core_healthy && exit 0
 
+repair_metadata_only() {
+    repair_xwalk_meta || {
+        log_msg "ERROR: failed to repair XWALKINFOS metadata"
+        return 1
+    }
+    ensure_using_core_pref || true
+    record_restore_timestamp
+    log_msg "RESTORED: XWALKINFOS core metadata $XWEB_VERSION after $MODE at $(last_restore_display)"
+    return 0
+}
+
+# A healthy static runtime can still be unusable when WeChat has reset
+# back_core_version_for_arm64-v8a to -1. Repair that independently.
+if live_core_healthy; then
+    xwalk_meta_healthy && exit 0
+    repair_metadata_only
+    exit $?
+fi
+
+# Let recursive cleaners finish before restoring static files.
 [ "$MODE" = boot ] || sleep 3
-live_core_healthy && exit 0
+
+if live_core_healthy; then
+    xwalk_meta_healthy && exit 0
+    repair_metadata_only
+    exit $?
+fi
 
 snapshot_valid || {
     log_msg "SKIP: no verified local XWeb snapshot is available"
@@ -64,16 +89,7 @@ else
     # Preserve WeChat-generated WebView profile and dex/oat state. Replace
     # only the static XWeb runtime files protected by the snapshot.
     mkdir -p "$X/apk" "$X/zip" "$X/extracted_xwalkcore" "$X/dex"
-    for F in \
-        apk/base.apk \
-        zip/base.zip \
-        extracted_xwalkcore/dummy.dat \
-        extracted_xwalkcore/filelist.config \
-        extracted_xwalkcore/reslist.config \
-        extracted_xwalkcore/libxwebcore.so \
-        extracted_xwalkcore/libWXAMSDK.so \
-        extracted_xwalkcore/libffmpeg.so \
-        extracted_xwalkcore/media_player_extension.apk
+    for F in +        apk/base.apk +        zip/base.zip +        extracted_xwalkcore/dummy.dat +        extracted_xwalkcore/filelist.config +        extracted_xwalkcore/reslist.config +        extracted_xwalkcore/libxwebcore.so +        extracted_xwalkcore/libWXAMSDK.so +        extracted_xwalkcore/libffmpeg.so +        extracted_xwalkcore/media_player_extension.apk
     do
         cp -p "$S/$F" "$X/$F" || {
             log_msg "ERROR: could not restore $F"
@@ -95,19 +111,14 @@ live_core_healthy || {
     exit 6
 }
 
-if ! grep -Fq "using_core_version_$XWEB_VERSION" "$PREF" 2>/dev/null; then
-    Q=$D/shared_prefs/.xweb_guard_pref_$$
-    printf "%s\n" \
-        "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" \
-        '<map>' \
-        "    <boolean name=\"using_core_version_$XWEB_VERSION\" value=\"true\" />" \
-        '</map>' > "$Q"
-    chown "$UIDN:$GIDN" "$Q"
-    chmod 660 "$Q"
-    chcon "$CTX" "$Q"
-    mv -f "$Q" "$PREF"
-fi
+# XWALKINFOS is authoritative. WeChat main process clears/rebuilds
+# xweb_using_core_version during initialization from this value.
+repair_xwalk_meta || {
+    log_msg "ERROR: post-restore XWALKINFOS metadata repair failed"
+    exit 7
+}
+ensure_using_core_pref || true
 
 record_restore_timestamp
-log_msg "RESTORED: XWeb $XWEB_VERSION after $MODE at $(last_restore_display); WeChat process was not killed"
+log_msg "RESTORED: XWeb $XWEB_VERSION + XWALKINFOS after $MODE at $(last_restore_display); WeChat process was not killed"
 exit 0

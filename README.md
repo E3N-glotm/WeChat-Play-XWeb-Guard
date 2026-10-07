@@ -6,7 +6,7 @@ WeChat Play XWeb Guard is a Magisk module for protecting and restoring the XWeb 
 
 WeChat Play XWeb Guard 是一个用于保护和恢复 **Google Play 版微信 XWeb 1160289** 的 Magisk 模块。
 
-## v1.2.1 at a glance / v1.2.1 概览
+## v1.2.2 at a glance / v1.2.2 概览
 
 - Bundles an authorized, privacy-scrubbed XWeb 1160289 static runtime snapshot directly in the Magisk ZIP.
 - Works even when the user's current WeChat XWeb has already been deleted; no APKM is required.
@@ -17,6 +17,8 @@ WeChat Play XWeb Guard 是一个用于保护和恢复 **Google Play 版微信 XW
 - Optional `strict_build` mode is available for users who want recovery limited to the directly validated WeChat build.
 - Stores the most recent successful recovery time in `/data/adb/wechat_xweb_guard/last_restore.txt`.
 - Updates the Magisk module card description to `Last restore: YYYY-MM-DD HH:MM:SS ±ZZZZ`; before the first recovery it shows `Last restore: never`.
+- Protects the authoritative XWeb core metadata in `XWALKINFOS.xml`; if `back_core_version_for_arm64-v8a` is reset to `-1`, it is restored to `1160289`.
+- Fixes the partial-recovery case where all XWeb files are present but WeChat still shows “upgrading” and starts System WebView.
 
 中文：
 
@@ -163,6 +165,8 @@ including the protected snapshot and guard state. It does **not** delete the XWe
 
 - [中文详细说明](docs/README_CN.md)
 - [Detailed English documentation](docs/README_EN.md)
+- [v1.2.2 XWALKINFOS 根因与修复说明](docs/XWALKINFOS_FIX_CN.md)
+- [v1.2.2 XWALKINFOS root cause and fix](docs/XWALKINFOS_FIX_EN.md)
 - [Third-party binary notice / 第三方二进制声明](THIRD_PARTY_NOTICE.md)
 
 ## License / 许可
