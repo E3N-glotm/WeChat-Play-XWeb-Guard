@@ -1,4 +1,7 @@
-name: Build Magisk module
+name: Build and validate Magisk XWeb module
+
+permissions:
+  contents: write
 
 on:
   push:
@@ -26,10 +29,32 @@ jobs:
         run: |
           chmod +x build.sh
           ./build.sh
-          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.2.2.zip
-          sha256sum dist/WeChat-Play-XWeb-Guard-v1.2.2.zip
+          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.2.3.zip
+          sha256sum dist/WeChat-Play-XWeb-Guard-v1.2.3.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: WeChat-Play-XWeb-Guard
           path: dist/*.zip
+      - name: Publish validated XWeb Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/^version=//p' module/module.prop)"
+          TAG="v$VERSION"
+          ZIP="dist/WeChat-Play-XWeb-Guard-v$VERSION.zip"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists: cannot overwrite"
+            exit 0
+          fi
+          HASH="$(sha256sum "$ZIP" | awk '{print $1}')"
+          {
+            echo "Cross-ROM XWeb recovery: no HyperOS version gate. Default mode does not disable restoration when the WeChat build changes; user-selected strict_build remains optional."
+            echo "New read-only Magisk Action probes package, CE user-data and BusyBox tar/hash capabilities; XWeb restore engine and bundled binary are unchanged."
+            echo "The bundled, validated XWeb core snapshot is intentionally included for authorized redistribution; private WeChat profile data must not be included."
+            echo "ZIP SHA256: $HASH"
+          } > RELEASE_NOTES.md
+          gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" --title "WeChat Play XWeb Guard $TAG" --notes-file RELEASE_NOTES.md --prerelease
+
