@@ -4,7 +4,25 @@ MODDIR=${0%/*}
 
 echo "=== WeChat Play XWeb Guard ==="
 sync_module_description || true
-echo "Module: 1.2.1 / author E3N"
+echo "Module: $(sed -n 's/^version=//p' "$MODDIR/module.prop") / author E3N"
+echo '=== Runtime compatibility probes (read-only) ==='
+if pm path com.tencent.mm >/dev/null 2>&1; then
+    echo 'WeChat package interface: available'
+else
+    echo 'WeChat package interface: unavailable; no recovery until installed'
+fi
+if [ -d /data_mirror/data_ce/null/0/com.tencent.mm ] &&
+   [ -d /data_mirror/data_ce/null/0/com.tencent.mm/shared_prefs ]; then
+    echo 'WeChat CE user-data interface: available'
+else
+    echo 'WeChat CE user-data interface: unavailable; will not reconstruct missing app data'
+fi
+if [ -x /data/adb/magisk/busybox ] || [ -x /system/xbin/busybox ]; then
+    echo 'Tar/hash runtime: available'
+else
+    echo 'Tar/hash runtime: missing; recovery cannot run'
+fi
+echo 'HyperOS build string: intentionally not used as a compatibility gate'
 echo "WeChat versionCode: $(wechat_version_code)"
 echo "Last successful restore: $(last_restore_display)"
 if validated_wechat; then
