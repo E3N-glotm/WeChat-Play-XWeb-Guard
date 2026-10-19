@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 ui_print "============================================"
-ui_print " WeChat Play XWeb Guard v1.2.1"
+ui_print " WeChat Play XWeb Guard $(sed -n 's/^version=//p' "$MODPATH/module.prop")"
 ui_print " Author: E3N"
 ui_print "============================================"
 
@@ -80,7 +80,7 @@ if [ ! -s "$RUNDIR/core_1160289.tar" ] &&
 fi
 
 ui_print "- XWeb 1160289 recovery is available immediately after install."
-ui_print "- Build changes only trigger a warning; recovery remains enabled."
+ui_print "- ROM version is not gated; WeChat build mismatch only warns unless user enabled strict mode."
 MODDIR=$MODPATH
 . "$MODPATH/bin/common.sh"
 sync_module_description || true
