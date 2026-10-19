@@ -5,8 +5,8 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 grep -q '^author=E3N$' "$ROOT/module/module.prop" || fail "module author must be E3N"
-grep -q '^version=1.2.2$' "$ROOT/module/module.prop" || fail "unexpected module version"
-grep -q '^versionCode=122$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
+grep -q '^version=1.2.3$' "$ROOT/module/module.prop" || fail "unexpected module version"
+grep -q '^versionCode=123$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
 grep -q '^description=XWeb 1160289 guard | Last restore: never$' "$ROOT/module/module.prop" +    || fail "initial Magisk last-restore description missing"
 grep -q 'EXPECTED_VERSION_CODE=3141' "$ROOT/module/bin/common.sh" || fail "validated reference build missing"
 grep -q 'XWEB_VERSION=1160289' "$ROOT/module/bin/common.sh" || fail "XWeb version guard missing"
