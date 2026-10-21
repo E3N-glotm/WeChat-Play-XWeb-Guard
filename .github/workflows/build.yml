@@ -29,8 +29,8 @@ jobs:
         run: |
           chmod +x build.sh
           ./build.sh
-          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.2.3.zip
-          sha256sum dist/WeChat-Play-XWeb-Guard-v1.2.3.zip
+          bash tests/test_public_release.sh dist/WeChat-Play-XWeb-Guard-v1.2.4.zip
+          sha256sum dist/WeChat-Play-XWeb-Guard-v1.2.4.zip
 
       - uses: actions/upload-artifact@v4
         with:
@@ -51,10 +51,11 @@ jobs:
           fi
           HASH="$(sha256sum "$ZIP" | awk '{print $1}')"
           {
-            echo "Cross-ROM XWeb recovery: no HyperOS version gate. Default mode does not disable restoration when the WeChat build changes; user-selected strict_build remains optional."
-            echo "New read-only Magisk Action probes package, CE user-data and BusyBox tar/hash capabilities; XWeb restore engine and bundled binary are unchanged."
+            echo "WeChat versionCode/build gating has been removed completely; versionCode is diagnostic information only."
+            echo "Fixes malformed shell '+' tokens that could cause 'ERROR: could not restore +' and block static XWeb restoration."
+            echo "Magisk Action probes package, CE user-data and BusyBox tar/hash capabilities without using firmware or WeChat version as a compatibility gate."
             echo "The bundled, validated XWeb core snapshot is intentionally included for authorized redistribution; private WeChat profile data must not be included."
             echo "ZIP SHA256: $HASH"
           } > RELEASE_NOTES.md
-          gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" --title "WeChat Play XWeb Guard $TAG" --notes-file RELEASE_NOTES.md --prerelease
+          gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" --title "WeChat Play XWeb Guard $TAG" --notes-file RELEASE_NOTES.md
 

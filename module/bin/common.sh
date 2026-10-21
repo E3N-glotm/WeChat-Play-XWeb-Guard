@@ -7,7 +7,6 @@ BB=/data/adb/magisk/busybox
 [ -x "$BB" ] || BB=busybox
 
 WXPKG=com.tencent.mm
-EXPECTED_VERSION_CODE=3141
 XWEB_VERSION=1160289
 EXPECTED_SNAPSHOT_SHA=09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
 
@@ -47,20 +46,6 @@ wechat_version_code() {
     dumpsys package "$WXPKG" 2>/dev/null \
         | grep -m1 'versionCode=' \
         | sed -n 's/.*versionCode=\([0-9]*\).*/\1/p'
-}
-
-validated_wechat() {
-    [ "$(wechat_version_code)" = "$EXPECTED_VERSION_CODE" ]
-}
-
-strict_build_mode() {
-    [ -f "$RUNDIR/strict_build" ]
-}
-
-recovery_allowed() {
-    validated_wechat && return 0
-    strict_build_mode && return 1
-    return 0
 }
 
 live_core_healthy() {
@@ -113,7 +98,11 @@ repair_xwalk_meta() {
             return 1
         }
     else
-        printf "%s\n" +            "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" +            '<map>' +            '    <int name="back_core_version_for_arm64-v8a" value="1160289" />' +            '</map>' > "$Q"
+        printf '%s\n' \
+            "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" \
+            '<map>' \
+            '    <int name="back_core_version_for_arm64-v8a" value="1160289" />' \
+            '</map>' > "$Q"
     fi
 
     chown "$UIDN:$GIDN" "$Q"
@@ -130,7 +119,11 @@ ensure_using_core_pref() {
     CTX=$(app_context)
     [ -n "$CTX" ] || return 1
     Q=$SP/.xweb_guard_pref_$$
-    printf "%s\n" +        "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" +        '<map>' +        "    <boolean name=\"using_core_version_$XWEB_VERSION\" value=\"true\" />" +        '</map>' > "$Q"
+    printf '%s\n' \
+        "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" \
+        '<map>' \
+        "    <boolean name=\"using_core_version_$XWEB_VERSION\" value=\"true\" />" \
+        '</map>' > "$Q"
     chown "$UIDN:$GIDN" "$Q"
     chmod 660 "$Q"
     chcon "$CTX" "$Q"

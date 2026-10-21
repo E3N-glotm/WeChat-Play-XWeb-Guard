@@ -2,7 +2,7 @@
 
 **作者：E3N**  
 **模块 ID：`wechat_xweb_guard`**  
-**版本：v1.2.2**
+**版本：v1.2.4**
 
 ## 1. 解决的问题
 
@@ -27,39 +27,25 @@ v1.2.0 做了两个重要调整：
 
 因此其他用户安装 v1.2.0 后，即使当前微信的 XWeb 已经被清空，也可以直接恢复，不需要 APKM，也不需要先让微信自己重新下载一遍 XWeb。
 
-## 3. 已验证参考环境
+## 3. 已测试环境与版本策略
 
 | 项目 | 已验证值 |
 |---|---|
 | 包名 | `com.tencent.mm` |
-| 微信 | Google Play 8.0.77 |
-| versionCode | `3141` |
+| 微信 | Google Play 8.0.77 / 8.0.79 |
+| versionCode | `3141` / `3182` |
 | XWeb | `1160289` |
 | ABI | `arm64-v8a` |
 | Root | Magisk 兼容环境 |
 
-这里的 `3141` 是**实机验证参考值**。
+上表只是**已经实机测试过的版本**，不是兼容性白名单。
 
-从 v1.2.0 开始，如果微信 versionCode 发生变化：
+从 v1.2.4 开始，模块彻底移除微信版本/build 限制。微信 versionCode 只在 Action 中作为诊断信息显示，不参与：
 
-- 模块会记录“当前 build 未验证”；
-- 默认仍继续恢复 XWeb 1160289；
-- 不主动降级微信；
-- 是否继续使用由用户自己判断。
-
-如果用户希望采用严格策略，可执行：
-
-```sh
-su -c 'touch /data/adb/wechat_xweb_guard/strict_build'
-```
-
-此时只有 versionCode 3141 会自动恢复。
-
-恢复默认跨 build 模式：
-
-```sh
-su -c 'rm -f /data/adb/wechat_xweb_guard/strict_build'
-```
+- XWeb 快照生成；
+- XWeb 1160289 自动恢复；
+- XWALKINFOS 元数据修复；
+- 安装或运行资格判断。
 
 ## 4. 内置快照与脱敏
 
@@ -155,16 +141,15 @@ zip/base.zip
 
 ## 7. 自动恢复条件
 
-默认模式下，满足以下条件即可恢复：
+满足以下条件即可恢复：
 
 1. 微信应用数据目录仍存在；
 2. `MicroMsg` 仍存在，用于避免“用户主动清空整个微信数据后模块又开始重建”；
 3. XWeb 1160289 静态运行文件缺失或不完整；
 4. 保护快照存在；
-5. 快照 SHA256 校验通过；
-6. 如果启用了 `strict_build`，则当前微信 versionCode 必须为 3141。
+5. 快照 SHA256 校验通过。
 
-默认没有第 6 条 build 限制。
+**没有微信 versionCode 条件。**
 
 ## 8. 恢复内容
 
@@ -201,14 +186,14 @@ extracted_xwalkcore/media_player_extension.apk
 <boolean name="using_core_version_1160289" value="true" />
 ```
 
-在未验证微信 build 上执行时，日志会明确记录 warning。
+不会因为微信 build/versionCode 不同而阻止这一步。
 
 ## 10. 安装
 
 从 GitHub Releases 下载：
 
 ```text
-WeChat-Play-XWeb-Guard-v1.2.1.zip
+WeChat-Play-XWeb-Guard-v1.2.4.zip
 ```
 
 然后：
@@ -230,9 +215,8 @@ WeChat-Play-XWeb-Guard-v1.2.1.zip
 
 模块 Action 会显示：
 
-- 当前微信 versionCode；
-- build 是否属于已验证参考；
-- 未验证 build 时是否仍允许恢复；
+- 当前微信 versionCode（仅诊断信息）；
+- 明确显示微信 build gating 已禁用；
 - XWeb 1160289 是否健康；
 - 快照是否通过 SHA256；
 - watcher PID；
@@ -297,14 +281,15 @@ su -c 'cat /data_mirror/data_ce/null/0/com.tencent.mm/shared_prefs/xweb_using_co
 
 ## 15. 微信升级后的行为
 
-v1.2.0 默认策略：
+v1.2.4 不维护任何微信版本白名单：
 
-- versionCode 变化：继续恢复 1160289；
-- Action/日志：提示 UNVALIDATED；
-- 用户确认可用：无需操作；
-- 用户发现不兼容：可以禁用模块、卸载模块，或者启用 `strict_build`。
+- versionCode 变化不会改变恢复资格；
+- 不存在 `strict_build` 模式；
+- 不存在 UNVALIDATED 状态拦截；
+- versionCode 只显示在 Action 中用于排查；
+- 如果未来某个微信版本确实与 XWeb 1160289 不兼容，由用户自行禁用/卸载模块，而不是模块根据版本号猜测兼容性。
 
-模块不会自行替用户判断“新 build 一定兼容”或“一定不兼容”。
+v1.2.4 同时修复了旧脚本中的错误 `+` 标记。该 bug 会导致日志反复出现 `ERROR: could not restore +`，从而使 XWeb 静态运行文件实际没有恢复成功。
 
 ## 最近一次成功恢复时间
 

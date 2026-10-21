@@ -24,16 +24,8 @@ else
 fi
 echo 'HyperOS build string: intentionally not used as a compatibility gate'
 echo "WeChat versionCode: $(wechat_version_code)"
+echo 'WeChat build gating: disabled; versionCode is informational only'
 echo "Last successful restore: $(last_restore_display)"
-if validated_wechat; then
-    echo "Build validation: validated target ($EXPECTED_VERSION_CODE)"
-else
-    if strict_build_mode; then
-        echo "Build validation: UNVALIDATED; strict-build mode blocks recovery"
-    else
-        echo "Build validation: UNVALIDATED; recovery remains enabled by user policy"
-    fi
-fi
 if live_core_healthy; then
     echo "Live XWeb $XWEB_VERSION: healthy"
 else

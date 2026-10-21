@@ -5,14 +5,11 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 grep -q '^author=E3N$' "$ROOT/module/module.prop" || fail "module author must be E3N"
-grep -q '^version=1.2.3$' "$ROOT/module/module.prop" || fail "unexpected module version"
-grep -q '^versionCode=123$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
-grep -q '^description=XWeb 1160289 guard | Last restore: never$' "$ROOT/module/module.prop" +    || fail "initial Magisk last-restore description missing"
-grep -q 'EXPECTED_VERSION_CODE=3141' "$ROOT/module/bin/common.sh" || fail "validated reference build missing"
+grep -q '^version=1.2.4$' "$ROOT/module/module.prop" || fail "unexpected module version"
+grep -q '^versionCode=124$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
+grep -Fq 'description=XWeb 1160289 guard | Last restore: never' "$ROOT/module/module.prop" || fail "initial Magisk last-restore description missing"
 grep -q 'XWEB_VERSION=1160289' "$ROOT/module/bin/common.sh" || fail "XWeb version guard missing"
 grep -q 'EXPECTED_SNAPSHOT_SHA=09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619' "$ROOT/module/bin/common.sh" || fail "hardcoded bundled snapshot digest missing"
-grep -q 'strict_build_mode' "$ROOT/module/bin/common.sh" || fail "user strict-build switch missing"
-grep -q 'recovery_allowed' "$ROOT/module/bin/repair.sh" || fail "repair policy hook missing"
 grep -q 'record_restore_timestamp' "$ROOT/module/bin/repair.sh" || fail "successful repair does not record timestamp"
 grep -q 'LAST_RESTORE=' "$ROOT/module/bin/common.sh" || fail "persistent restore timestamp path missing"
 grep -q 'sync_module_description' "$ROOT/module/bin/common.sh" || fail "dynamic Magisk description updater missing"
@@ -24,8 +21,12 @@ grep -q 'repair_xwalk_meta' "$ROOT/module/bin/repair.sh" || fail "repair path do
 grep -q 'META:cwDMx' "$ROOT/module/bin/watch.sh" || fail "watcher does not monitor XWALKINFOS changes"
 grep -q '"$META"' "$ROOT/module/bin/event.sh" || fail "event handler does not process XWALKINFOS"
 
-if grep -q 'supported_wechat || exit 0' "$ROOT/module/bin/repair.sh"; then
-    fail "repair must not hard-stop merely because WeChat build changed"
+if grep -R -E 'EXPECTED_VERSION_CODE|validated_wechat|strict_build|recovery_allowed|versionCode=3141' "$ROOT/module" --include='*.sh' --include='*.prop' >/dev/null 2>&1; then
+    fail "WeChat build/version gating must not exist anywhere in the module"
+fi
+
+if grep -R -E 'for F in \+|printf .%s\\n. \+' "$ROOT/module/bin" --include='*.sh' >/dev/null 2>&1; then
+    fail "malformed shell plus tokens detected"
 fi
 
 grep -q 'apk/base.apk' "$ROOT/module/bin/snapshot.sh" || fail "base.apk is not part of the local snapshot"

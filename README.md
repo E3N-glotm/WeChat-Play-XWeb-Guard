@@ -6,15 +6,15 @@ WeChat Play XWeb Guard is a Magisk module for protecting and restoring the XWeb 
 
 WeChat Play XWeb Guard 是一个用于保护和恢复 **Google Play 版微信 XWeb 1160289** 的 Magisk 模块。
 
-## v1.2.2 at a glance / v1.2.2 概览
+## v1.2.4 at a glance / v1.2.4 概览
 
 - Bundles an authorized, privacy-scrubbed XWeb 1160289 static runtime snapshot directly in the Magisk ZIP.
 - Works even when the user's current WeChat XWeb has already been deleted; no APKM is required.
 - Uses BusyBox `inotifyd` for event-driven deletion detection instead of high-frequency polling.
 - Restores only XWeb static runtime files and preserves WeChat-generated profile/dex state.
 - Does not force-stop WeChat, modify FCM tokens, disable SELinux, or use LSPosed/Zygisk.
-- WeChat build changes no longer automatically disable recovery. Unvalidated builds produce a warning, but recovery remains enabled by default.
-- Optional `strict_build` mode is available for users who want recovery limited to the directly validated WeChat build.
+- No WeChat version/build allowlist exists. versionCode is informational only and never blocks snapshot creation or recovery.
+- Fixes the malformed restore loop that could emit `ERROR: could not restore +` and prevent static XWeb files from being restored.
 - Stores the most recent successful recovery time in `/data/adb/wechat_xweb_guard/last_restore.txt`.
 - Updates the Magisk module card description to `Last restore: YYYY-MM-DD HH:MM:SS ±ZZZZ`; before the first recovery it shows `Last restore: never`.
 - Protects the authoritative XWeb core metadata in `XWALKINFOS.xml`; if `back_core_version_for_arm64-v8a` is reset to `-1`, it is restored to `1160289`.
@@ -27,41 +27,29 @@ WeChat Play XWeb Guard 是一个用于保护和恢复 **Google Play 版微信 XW
 - 使用 BusyBox `inotifyd` 事件监听，不做高频目录轮询。
 - 只恢复 XWeb 静态运行文件，保留微信自己生成的 Profile 和 dex/oat 状态。
 - 不强制停止微信、不修改 FCM token、不关闭 SELinux、不使用 LSPosed/Zygisk。
-- 微信升级到其他 build 后，模块**不会自动停止恢复**；只提示当前 build 未验证，默认仍继续恢复 XWeb 1160289。
-- 如果用户希望采用保守策略，可自行启用 `strict_build`。
+- **彻底取消微信版本/build 白名单**；versionCode 只作为诊断信息，不参与快照生成或恢复判定。
+- 修复旧恢复脚本中的错误 `+` 标记；该问题会导致 `ERROR: could not restore +` 并让 XWeb 静态文件恢复失败。
 - 每次完整恢复成功后记录最近一次恢复时间。
 - Magisk 模块卡片会直接显示 `Last restore: YYYY-MM-DD HH:MM:SS ±ZZZZ`；从未恢复过时显示 `Last restore: never`。
 
-## Validated reference / 已验证参考环境
+## Tested environments / 已测试环境
 
 | Item | Value |
 |---|---|
 | Package | `com.tencent.mm` |
-| WeChat | Google Play 8.0.77 |
-| versionCode | `3141` |
+| WeChat | Google Play 8.0.77 / 8.0.79 |
+| versionCode | `3141` / `3182` |
 | XWeb | `1160289` |
 | ABI | `arm64-v8a` |
 | Root | Magisk-compatible |
 
-The table above is the **directly tested reference**, not an automatic compatibility block. Starting with v1.2.0, a different WeChat versionCode is treated as **UNVALIDATED**, not **DISABLED**.
+These are only directly tested builds. **v1.2.4 contains no code path that rejects a WeChat versionCode.**
 
-上表是**已实机验证的参考组合**，不是自动兼容性封锁条件。从 v1.2.0 开始，其他微信 versionCode 会被标记为 **UNVALIDATED**，但默认不会停止恢复。
-
-Optional strict mode / 可选严格模式：
-
-```sh
-su -c 'touch /data/adb/wechat_xweb_guard/strict_build'
-```
-
-Return to default cross-build recovery / 恢复默认跨 build 恢复：
-
-```sh
-su -c 'rm -f /data/adb/wechat_xweb_guard/strict_build'
-```
+这些只是已经实机测试过的版本。**v1.2.4 不存在根据微信 versionCode 拒绝恢复的代码路径。**
 
 ## Bundled XWeb snapshot / 内置 XWeb 快照
 
-v1.2.1 includes:
+v1.2.4 includes:
 
 ```text
 assets/core_1160289.tar
@@ -123,7 +111,7 @@ Download the latest ZIP from:
 
 https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases
 
-在 Magisk 中选择 Release ZIP 安装并重启即可。v1.2.1 不要求用户事先准备 APKM，也不要求当前微信里已经存在 XWeb。
+在 Magisk 中选择 Release ZIP 安装并重启即可。v1.2.4 不要求用户事先准备 APKM，也不要求当前微信里已经存在 XWeb。
 
 最近一次成功恢复时间保存在：
 
@@ -138,14 +126,14 @@ Magisk 模块卡片显示同一时间；模块不会为了立即刷新 UI 而强
 The Action entry reports:
 
 - current WeChat versionCode;
-- whether the build is validated or unvalidated;
+- WeChat versionCode for diagnostics only;
 - whether XWeb 1160289 is currently healthy;
 - whether the protected snapshot verifies;
 - watcher state;
 - recent recovery log entries.
 - last successful recovery timestamp.
 
-Action 会显示当前微信版本、build 是否已验证、XWeb 状态、保护快照状态、watcher 状态、最近恢复日志和最近一次成功恢复时间。
+Action 会显示当前微信版本（仅诊断信息）、XWeb 状态、保护快照状态、watcher 状态、最近恢复日志和最近一次成功恢复时间。
 
 ## Uninstall / 卸载
 

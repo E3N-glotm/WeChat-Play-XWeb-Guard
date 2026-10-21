@@ -2,7 +2,7 @@
 
 **Author: E3N**  
 **Module ID: `wechat_xweb_guard`**  
-**Version: v1.2.2**
+**Version: v1.2.4**
 
 ## 1. Purpose
 
@@ -27,39 +27,20 @@ v1.2.0 introduces two policy changes:
 
 As a result, a new user can install v1.2.0 and recover XWeb 1160289 even if the current WeChat XWeb directory is already empty. No APKM is required.
 
-## 3. Validated reference environment
+## 3. Tested environments and version policy
 
 | Item | Validated value |
 |---|---|
 | Package | `com.tencent.mm` |
-| WeChat | Google Play 8.0.77 |
-| versionCode | `3141` |
+| WeChat | Google Play 8.0.77 / 8.0.79 |
+| versionCode | `3141` / `3182` |
 | XWeb | `1160289` |
 | ABI | `arm64-v8a` |
 | Root | Magisk-compatible |
 
-versionCode 3141 is a **directly tested reference**, not a default recovery block.
+These are **directly tested builds**, not a compatibility allowlist.
 
-On a different WeChat versionCode, v1.2.0:
-
-- reports the build as unvalidated;
-- continues protecting/restoring XWeb 1160289 by default;
-- does not downgrade WeChat;
-- leaves compatibility judgment to the user.
-
-Optional strict mode:
-
-```sh
-su -c 'touch /data/adb/wechat_xweb_guard/strict_build'
-```
-
-With strict mode enabled, automatic recovery is limited to versionCode 3141.
-
-Return to the default cross-build policy:
-
-```sh
-su -c 'rm -f /data/adb/wechat_xweb_guard/strict_build'
-```
+Starting with v1.2.4, WeChat versionCode is diagnostic information only. It does not decide whether snapshot creation, XWeb 1160289 restoration, XWALKINFOS repair, installation, or runtime recovery may run.
 
 ## 4. Bundled snapshot and privacy scrub
 
@@ -150,16 +131,15 @@ Recovered directories receive new inodes, so the event handler terminates only i
 
 ## 7. Automatic recovery conditions
 
-In the default policy, recovery requires:
+Recovery requires:
 
 1. WeChat application data still exists;
 2. `MicroMsg` exists, preventing reconstruction after an intentional full app-data clear;
 3. XWeb 1160289 static runtime is missing or incomplete;
 4. the protected snapshot exists;
-5. the snapshot SHA256 verifies;
-6. if `strict_build` is enabled, WeChat versionCode must be 3141.
+5. the snapshot SHA256 verifies.
 
-There is no default build-number block in v1.2.0.
+There is **no WeChat versionCode condition**.
 
 ## 8. Files restored
 
@@ -196,14 +176,14 @@ If the static runtime has been restored but WeChat previously cleared the select
 <boolean name="using_core_version_1160289" value="true" />
 ```
 
-On an unvalidated WeChat build, the action is explicitly logged as a warning.
+This action is not gated or classified by WeChat build/versionCode.
 
 ## 10. Installation
 
 Download:
 
 ```text
-WeChat-Play-XWeb-Guard-v1.2.1.zip
+WeChat-Play-XWeb-Guard-v1.2.4.zip
 ```
 
 from GitHub Releases and install it from Magisk.
@@ -220,9 +200,8 @@ No APKM is required.
 
 The Action entry reports:
 
-- current WeChat versionCode;
-- validated/unvalidated build state;
-- whether unvalidated-build recovery is allowed;
+- current WeChat versionCode (diagnostic only);
+- explicit confirmation that WeChat build gating is disabled;
 - live XWeb health;
 - protected snapshot verification;
 - watcher PID/state;
@@ -280,14 +259,15 @@ The module therefore allows WeChat to manage its directory normally and restores
 
 ## 15. WeChat upgrades
 
-Default v1.2.0 behavior:
+v1.2.4 has no WeChat-version allowlist:
 
-- versionCode changes: XWeb 1160289 recovery continues;
-- Action/log output: UNVALIDATED warning;
-- if the user confirms it works: no action required;
-- if incompatible: disable/uninstall the module or enable `strict_build`.
+- versionCode changes do not alter recovery eligibility;
+- there is no `strict_build` mode;
+- there is no UNVALIDATED state that blocks recovery;
+- versionCode is displayed only for diagnostics;
+- if a future WeChat build is genuinely incompatible with XWeb 1160289, the user can disable/uninstall the module instead of the module guessing compatibility from a build number.
 
-The module does not make the compatibility decision for the user.
+v1.2.4 also fixes malformed `+` tokens in the previous restore loop. That bug could produce `ERROR: could not restore +` and prevent the static XWeb runtime from being restored.
 
 ## Last successful recovery timestamp
 

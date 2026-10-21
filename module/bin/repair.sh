@@ -11,15 +11,8 @@ if [ "$XWEB_GUARD_LOCK_HELD" != 1 ]; then
 fi
 
 # A deliberate uninstall / full app-data reset should not be reconstructed.
+# WeChat versionCode is intentionally NOT part of recovery eligibility.
 app_data_ready || exit 0
-
-if ! validated_wechat; then
-    log_msg "WARNING: restoring XWeb $XWEB_VERSION on unvalidated WeChat versionCode=$(wechat_version_code)"
-fi
-recovery_allowed || {
-    log_msg "SKIP: strict-build mode blocks recovery on versionCode=$(wechat_version_code)"
-    exit 0
-}
 
 repair_metadata_only() {
     repair_xwalk_meta || {
@@ -89,7 +82,16 @@ else
     # Preserve WeChat-generated WebView profile and dex/oat state. Replace
     # only the static XWeb runtime files protected by the snapshot.
     mkdir -p "$X/apk" "$X/zip" "$X/extracted_xwalkcore" "$X/dex"
-    for F in +        apk/base.apk +        zip/base.zip +        extracted_xwalkcore/dummy.dat +        extracted_xwalkcore/filelist.config +        extracted_xwalkcore/reslist.config +        extracted_xwalkcore/libxwebcore.so +        extracted_xwalkcore/libWXAMSDK.so +        extracted_xwalkcore/libffmpeg.so +        extracted_xwalkcore/media_player_extension.apk
+    for F in \
+        apk/base.apk \
+        zip/base.zip \
+        extracted_xwalkcore/dummy.dat \
+        extracted_xwalkcore/filelist.config \
+        extracted_xwalkcore/reslist.config \
+        extracted_xwalkcore/libxwebcore.so \
+        extracted_xwalkcore/libWXAMSDK.so \
+        extracted_xwalkcore/libffmpeg.so \
+        extracted_xwalkcore/media_player_extension.apk
     do
         cp -p "$S/$F" "$X/$F" || {
             log_msg "ERROR: could not restore $F"
