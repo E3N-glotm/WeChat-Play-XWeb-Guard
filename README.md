@@ -1,170 +1,34 @@
-# WeChat Play XWeb Guard
+# WeChat Play XWeb Guard · 微信 XWeb 内核保护与恢复
 
-**Author / 作者：E3N**
+**语言：简体中文（当前） | [English](README_EN.md)**
 
-WeChat Play XWeb Guard is a Magisk module for protecting and restoring the XWeb 1160289 runtime used by the validated Google Play build of WeChat.
+用于保护 **Google Play 版微信**的 XWeb/Pinus `1160289` 静态运行时。部分清理工具可能误删微信私有 XWeb 目录，导致小程序与网页出现“正在升级”，或退回系统 WebView；本模块保存快照，并在需要时恢复。
 
-WeChat Play XWeb Guard 是一个用于保护和恢复 **Google Play 版微信 XWeb 1160289** 的 Magisk 模块。
+**当前版本：v1.2.4** · [下载 Release](https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases) · [完整中文技术文档](docs/README_CN.md)
 
-## v1.2.4 at a glance / v1.2.4 概览
+## 工作方式
 
-- Bundles an authorized, privacy-scrubbed XWeb 1160289 static runtime snapshot directly in the Magisk ZIP.
-- Works even when the user's current WeChat XWeb has already been deleted; no APKM is required.
-- Uses BusyBox `inotifyd` for event-driven deletion detection instead of high-frequency polling.
-- Restores only XWeb static runtime files and preserves WeChat-generated profile/dex state.
-- Does not force-stop WeChat, modify FCM tokens, disable SELinux, or use LSPosed/Zygisk.
-- No WeChat version/build allowlist exists. versionCode is informational only and never blocks snapshot creation or recovery.
-- Fixes the malformed restore loop that could emit `ERROR: could not restore +` and prevent static XWeb files from being restored.
-- Stores the most recent successful recovery time in `/data/adb/wechat_xweb_guard/last_restore.txt`.
-- Updates the Magisk module card description to `Last restore: YYYY-MM-DD HH:MM:SS ±ZZZZ`; before the first recovery it shows `Last restore: never`.
-- Protects the authoritative XWeb core metadata in `XWALKINFOS.xml`; if `back_core_version_for_arm64-v8a` is reset to `-1`, it is restored to `1160289`.
-- Fixes the partial-recovery case where all XWeb files are present but WeChat still shows “upgrading” and starts System WebView.
+- Release ZIP 自带**经路径级隐私检查**的 XWeb `1160289` 静态快照及 SHA-256 文件；可在原 XWeb 已被清理的情况下恢复。
+- 使用 BusyBox `inotifyd` 监听关键文件删除；避免高频全盘轮询。
+- 仅恢复 XWeb 静态运行文件，保留微信自行生成的 `Profile`、Cookie、聊天记录及账号数据。
+- 维护 `XWALKINFOS.xml` 核心版本信息，针对误变成 `-1` 等情形做有限修复。
+- 从 v1.2.4 起，微信 `versionCode` 只用于诊断显示，不作为阻止恢复的白名单条件；**不代表未来所有 XWeb 版本都兼容本快照**。
+- 不强制停止微信，不修改 FCM Token，不关闭 SELinux，也不依赖 LSPosed/Zygisk Hook。
 
-中文：
+## 安装与状态
 
-- Magisk ZIP **直接内置**经过脱敏检查的 XWeb 1160289 静态运行快照。
-- 即使用户当前微信里的 XWeb 已经被清理掉，也能直接恢复；**不需要 APKM**。
-- 使用 BusyBox `inotifyd` 事件监听，不做高频目录轮询。
-- 只恢复 XWeb 静态运行文件，保留微信自己生成的 Profile 和 dex/oat 状态。
-- 不强制停止微信、不修改 FCM token、不关闭 SELinux、不使用 LSPosed/Zygisk。
-- **彻底取消微信版本/build 白名单**；versionCode 只作为诊断信息，不参与快照生成或恢复判定。
-- 修复旧恢复脚本中的错误 `+` 标记；该问题会导致 `ERROR: could not restore +` 并让 XWeb 静态文件恢复失败。
-- 每次完整恢复成功后记录最近一次恢复时间。
-- Magisk 模块卡片会直接显示 `Last restore: YYYY-MM-DD HH:MM:SS ±ZZZZ`；从未恢复过时显示 `Last restore: never`。
-
-## Tested environments / 已测试环境
-
-| Item | Value |
-|---|---|
-| Package | `com.tencent.mm` |
-| WeChat | Google Play 8.0.77 / 8.0.79 |
-| versionCode | `3141` / `3182` |
-| XWeb | `1160289` |
-| ABI | `arm64-v8a` |
-| Root | Magisk-compatible |
-
-These are only directly tested builds. **v1.2.4 contains no code path that rejects a WeChat versionCode.**
-
-这些只是已经实机测试过的版本。**v1.2.4 不存在根据微信 versionCode 拒绝恢复的代码路径。**
-
-## Bundled XWeb snapshot / 内置 XWeb 快照
-
-v1.2.4 includes:
+在 Magisk 里安装 ZIP 并重启。通过模块的**操作**按钮查看 XWeb 内核、快照校验与最近成功恢复时间。保存位置：
 
 ```text
-assets/core_1160289.tar
-assets/core_1160289.sha256
-```
-
-Snapshot SHA256:
-
-```text
-09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619
-```
-
-The archive contains exactly the validated XWeb static runtime set:
-
-```text
-apk/base.apk
-extracted_xwalkcore/
-extracted_xwalkcore/dummy.dat
-extracted_xwalkcore/libxwebcore.so
-extracted_xwalkcore/libWXAMSDK.so
-extracted_xwalkcore/libffmpeg.so
-extracted_xwalkcore/media_player_extension.apk
-extracted_xwalkcore/filelist.config
-extracted_xwalkcore/reslist.config
-zip/base.zip
-```
-
-It contains no `Default`, `Profile`, `Cookies`, `History`, `Login`, `MicroMsg`, FCM token, chat, or account data.
-
-该快照只包含 XWeb 静态运行文件，不包含 `Default`、`Profile`、`Cookies`、`History`、`Login`、`MicroMsg`、FCM token、聊天记录或账号数据。
-
-The maintainer **E3N states that they hold authorization to publicly redistribute the bundled XWeb binary files**. See [THIRD_PARTY_NOTICE.md](THIRD_PARTY_NOTICE.md).
-
-维护者 **E3N 声明拥有这些 XWeb 二进制文件的公开再分发授权**。详细信息见 [THIRD_PARTY_NOTICE.md](THIRD_PARTY_NOTICE.md)。
-
-## How it works / 工作原理
-
-During installation:
-
-1. The bundled snapshot SHA256 is verified.
-2. The snapshot is moved into the private guard directory:
-
-   ```text
-   /data/adb/wechat_xweb_guard/core_1160289.tar
-   /data/adb/wechat_xweb_guard/core_1160289.sha256
-   ```
-
-3. Only one persistent copy is kept after installation.
-4. On boot, the guard watches the WeChat/XWeb paths using `inotifyd`.
-5. If the XWeb static runtime disappears or becomes incomplete, the snapshot is verified again and restored.
-6. Directory watches are automatically re-armed after recovery because restored directories have new inodes.
-7. A successful recovery writes `last_restore.txt` and updates the installed `module.prop` description so Magisk can display the latest recovery time.
-
-安装过程会先验证内置快照 SHA256，然后把快照移到独立私有目录，避免模块目录和保护目录各占一份空间。开机后通过 `inotifyd` 等待删除/移动事件；发现 XWeb 静态文件缺失后再次校验快照并恢复，同时重新订阅新目录 inode。
-
-## Installation / 安装
-
-Download the latest ZIP from:
-
-https://github.com/E3N-glotm/WeChat-Play-XWeb-Guard/releases
-
-在 Magisk 中选择 Release ZIP 安装并重启即可。v1.2.4 不要求用户事先准备 APKM，也不要求当前微信里已经存在 XWeb。
-
-最近一次成功恢复时间保存在：
-
-```text
+/data/adb/wechat_xweb_guard/core_1160289.tar
+/data/adb/wechat_xweb_guard/core_1160289.sha256
 /data/adb/wechat_xweb_guard/last_restore.txt
 ```
 
-Magisk 模块卡片显示同一时间；模块不会为了立即刷新 UI 而强制结束 Magisk，重新进入或刷新模块页即可看到新值。
+运行模块会动态更新 Magisk 中显示的“最近恢复时间”。启用前应确认微信为适配的 Google Play 版本以及 ARM64 环境。
 
-## Magisk Action / 模块操作
+## 隐私与注意事项
 
-The Action entry reports:
+公开快照只包含 XWeb 静态内容，不包含 `Default`、`Cookies`、`History`、`MicroMsg` 或用户 Token。使用前仍请自行备份微信数据。系统或微信后续调整 XWeb ABI/文件格式时，应停止使用不匹配的快照。
 
-- current WeChat versionCode;
-- WeChat versionCode for diagnostics only;
-- whether XWeb 1160289 is currently healthy;
-- whether the protected snapshot verifies;
-- watcher state;
-- recent recovery log entries.
-- last successful recovery timestamp.
-
-Action 会显示当前微信版本（仅诊断信息）、XWeb 状态、保护快照状态、watcher 状态、最近恢复日志和最近一次成功恢复时间。
-
-## Uninstall / 卸载
-
-Uninstall from Magisk and reboot.
-
-The uninstaller removes:
-
-```text
-/data/adb/wechat_xweb_guard/
-```
-
-including the protected snapshot and guard state. It does **not** delete the XWeb runtime currently installed inside WeChat.
-
-从 Magisk 卸载并重启即可。卸载会删除模块自己的保护快照、日志和状态，但**不会删除微信当前正在使用的 XWeb**。
-
-## Documentation / 详细文档
-
-- [中文详细说明](docs/README_CN.md)
-- [Detailed English documentation](docs/README_EN.md)
-- [v1.2.2 XWALKINFOS 根因与修复说明](docs/XWALKINFOS_FIX_CN.md)
-- [v1.2.2 XWALKINFOS root cause and fix](docs/XWALKINFOS_FIX_EN.md)
-- [Third-party binary notice / 第三方二进制声明](THIRD_PARTY_NOTICE.md)
-
-## License / 许可
-
-Guard source code: MIT License.
-
-The bundled XWeb runtime is third-party software and is covered by the redistribution authorization stated by the repository maintainer. The MIT license applies to the guard source code, not to third-party XWeb binaries.
-
-守护模块源码采用 MIT License。内置 XWeb 属于第三方二进制，其再分发依据维护者声明的授权；MIT License 仅适用于本项目守护代码，不自动覆盖第三方 XWeb 二进制。
-
-This project is not affiliated with or endorsed by Tencent, WeChat, Google, or Xiaomi.
-
-本项目与腾讯、微信、Google、小米无隶属或官方背书关系。
+禁用/卸载后重启停止自动守护，恢复行为不应该清除现有微信聊天数据。具体校验路径、已测试版本、恢复条件与授权声明见 [详细中文说明](docs/README_CN.md) 以及 [英文详细说明](docs/README_EN.md)。
