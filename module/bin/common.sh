@@ -144,7 +144,8 @@ sync_module_description() {
     [ -f "$PROP" ] || return 0
 
     TS=$(last_restore_display)
-    DESC="XWeb 1160289 guard | Last restore: $TS"
+    [ "$TS" = never ] && TS="从未"
+    DESC="XWeb 1160289 内核守护｜最近恢复：$TS"
     TMP=$RUNDIR/.module_prop.$$
 
     awk -v d="$DESC" '
