@@ -7,7 +7,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 grep -q '^author=E3N$' "$ROOT/module/module.prop" || fail "module author must be E3N"
 grep -q '^version=1.2.4$' "$ROOT/module/module.prop" || fail "unexpected module version"
 grep -q '^versionCode=124$' "$ROOT/module/module.prop" || fail "unexpected module versionCode"
-grep -Fq 'description=XWeb 1160289 内核守护｜最近恢复：从未' "$ROOT/module/module.prop" || fail "initial Magisk last-restore description missing"
+grep -Fq 'description=微信 XWeb 1160289 内核守护｜最近恢复：从未' "$ROOT/module/module.prop" || fail "initial Magisk last-restore description missing"
 grep -q 'XWEB_VERSION=1160289' "$ROOT/module/bin/common.sh" || fail "XWeb version guard missing"
 grep -q 'EXPECTED_SNAPSHOT_SHA=09347ca1fb5b250fd79460b2b22083400046599fa5714af93124f2d1507f7619' "$ROOT/module/bin/common.sh" || fail "hardcoded bundled snapshot digest missing"
 grep -q 'record_restore_timestamp' "$ROOT/module/bin/repair.sh" || fail "successful repair does not record timestamp"
